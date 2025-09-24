@@ -97,11 +97,6 @@ jobs:
           name: binaries
           path: release/
 
-      - name: Zip release binaries
-        run: |
-          cd release
-          zip -r ../fixpanic-binaries.zip .
-          cd ..
 
       - name: Create Release
         id: create_release
@@ -144,12 +139,21 @@ jobs:
           UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
         run: |
           for file in release/*; do
-            echo "Uploading $file..."
+            filename=$(basename "$file")
+            # Set content type based on file extension
+            if [[ "$filename" == *.tar.gz ]]; then
+              content_type="application/gzip"
+            elif [[ "$filename" == *.exe ]]; then
+              content_type="application/octet-stream"
+            else
+              content_type="application/octet-stream"
+            fi
+            echo "Uploading $filename with content-type $content_type..."
             curl -sSL -X POST \
               -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "Content-Type: application/gzip" \
+              -H "Content-Type: $content_type" \
               --data-binary @"$file" \
-              "$UPLOAD_URL?name=$(basename "$file")"
+              "$UPLOAD_URL?name=$filename"
           done
 
   notify:
