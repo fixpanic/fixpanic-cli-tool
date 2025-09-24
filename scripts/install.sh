@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="fixpanic/fixpanic-cli"
+GITHUB_REPO="fixpanic/fixpanic-cli-tool"
 BINARY_NAME="fixpanic"
 INSTALL_DIR="/usr/local/bin"
 USER_INSTALL_DIR="$HOME/.local/bin"
