@@ -104,33 +104,47 @@ get_latest_version() {
 
 download_binary() {
     print_info "Downloading Fixpanic CLI..."
-    
-    DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/releases/download/${VERSION}/${ARTIFACT_NAME}"
-    TEMP_FILE="/tmp/${BINARY_NAME}-$$"
-    
+
+    # Download the .tar.gz archive for Unix, or .exe for Windows
+    if [ "$PLATFORM" = "windows" ]; then
+        ARCHIVE_NAME="${ARTIFACT_NAME}"
+    else
+        ARCHIVE_NAME="${ARTIFACT_NAME}.tar.gz"
+    fi
+
+    DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/releases/download/${VERSION}/${ARCHIVE_NAME}"
+    TEMP_DIR="/tmp/fixpanic-install-$$"
+    mkdir -p "$TEMP_DIR"
+    ARCHIVE_PATH="$TEMP_DIR/$ARCHIVE_NAME"
+
     print_info "Download URL: $DOWNLOAD_URL"
-    
-    if $DOWNLOAD_CMD "$DOWNLOAD_URL" > "$TEMP_FILE"; then
+
+    if $DOWNLOAD_CMD "$DOWNLOAD_URL" > "$ARCHIVE_PATH"; then
         print_success "Download completed"
     else
         print_error "Download failed"
-        rm -f "$TEMP_FILE"
+        rm -rf "$TEMP_DIR"
         exit 1
     fi
-    
-    # Make the binary executable
-    chmod +x "$TEMP_FILE"
-    
+
+    if [ "$PLATFORM" = "windows" ]; then
+        BINARY_PATH="$ARCHIVE_PATH"
+        chmod +x "$BINARY_PATH"
+    else
+        # Extract the binary from the tar.gz
+        tar -xzf "$ARCHIVE_PATH" -C "$TEMP_DIR"
+        BINARY_PATH="$TEMP_DIR/${ARTIFACT_NAME}"
+        chmod +x "$BINARY_PATH"
+    fi
+
     # Verify the binary
-    if [ -x "$TEMP_FILE" ]; then
+    if [ -x "$BINARY_PATH" ]; then
         print_success "Binary verification passed"
     else
         print_error "Binary verification failed"
-        rm -f "$TEMP_FILE"
+        rm -rf "$TEMP_DIR"
         exit 1
     fi
-    
-    BINARY_PATH="$TEMP_FILE"
 }
 
 install_binary() {
@@ -184,7 +198,7 @@ install_binary() {
 }
 
 cleanup() {
-    rm -f "/tmp/${BINARY_NAME}-$$"
+    rm -rf "/tmp/fixpanic-install-$$"
 }
 
 # Main installation process
