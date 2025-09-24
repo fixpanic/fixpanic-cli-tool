@@ -133,45 +133,63 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: List files to upload
+        run: |
+          echo "Files in release directory:"
+          ls -la release/
+
       - name: Upload Release Assets (all archives)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
         run: |
+          # Remove the template part from upload_url
+          UPLOAD_URL_BASE="${UPLOAD_URL%\{*}"
+          
           for file in release/*; do
-            filename=$(basename "$file")
-            # Set content type based on file extension
-            if [[ "$filename" == *.tar.gz ]]; then
-              content_type="application/gzip"
-            elif [[ "$filename" == *.exe ]]; then
-              content_type="application/octet-stream"
-            else
-              content_type="application/octet-stream"
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              # Set content type based on file extension
+              if [[ "$filename" == *.tar.gz ]]; then
+                content_type="application/gzip"
+              elif [[ "$filename" == *.exe ]]; then
+                content_type="application/octet-stream"
+              else
+                content_type="application/octet-stream"
+              fi
+              
+              echo "Uploading $filename with content-type $content_type..."
+              
+              # Upload with proper error handling
+              if curl -sSL -X POST \
+                -H "Authorization: Bearer $GITHUB_TOKEN" \
+                -H "Content-Type: $content_type" \
+                --data-binary @"$file" \
+                "${UPLOAD_URL_BASE}?name=${filename}"; then
+                echo "✅ Successfully uploaded $filename"
+              else
+                echo "❌ Failed to upload $filename"
+                exit 1
+              fi
             fi
-            echo "Uploading $filename with content-type $content_type..."
-            curl -sSL -X POST \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "Content-Type: $content_type" \
-              --data-binary @"$file" \
-              "$UPLOAD_URL?name=$filename"
           done
 
-  notify:
-    name: Notify Release
-    needs: [build, release]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Notify Slack
-        if: success()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: success
-          text: |
-            🎉 Fixpanic CLI ${{ needs.build.outputs.version }} released successfully!
+  # notify:
+  #   name: Notify Release
+  #   needs: [build, release]
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   steps:
+  #     - name: Notify Slack
+  #       if: success()
+  #       uses: 8398a7/action-slack@v3
+  #       with:
+  #         status: success
+  #         text: |
+  #           🎉 Fixpanic CLI ${{ needs.build.outputs.version }} released successfully!
             
-            📦 Binaries: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build.outputs.version }}
-            🐳 Docker: fixpanic/fixpanic-cli:${{ needs.build.outputs.version }}
-            📖 Docs: https://github.com/${{ github.repository }}/blob/main/README.md
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+  #           📦 Binaries: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build.outputs.version }}
+  #           🐳 Docker: fixpanic/fixpanic-cli:${{ needs.build.outputs.version }}
+  #           📖 Docs: https://github.com/${{ github.repository }}/blob/main/README.md
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
