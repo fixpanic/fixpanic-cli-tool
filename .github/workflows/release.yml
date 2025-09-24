@@ -97,6 +97,12 @@ jobs:
           name: binaries
           path: release/
 
+      - name: Zip release binaries
+        run: |
+          cd release
+          zip -r ../fixpanic-binaries.zip .
+          cd ..
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -132,15 +138,19 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Assets
-        uses: actions/upload-release-asset@v1
+      - name: Upload Release Assets (all archives)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: release/
-          asset_name: fixpanic-binaries.zip
-          asset_content_type: application/zip
+          UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
+        run: |
+          for file in release/*; do
+            echo "Uploading $file..."
+            curl -sSL -X POST \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Content-Type: application/gzip" \
+              --data-binary @"$file" \
+              "$UPLOAD_URL?name=$(basename "$file")"
+          done
 
   notify:
     name: Notify Release
