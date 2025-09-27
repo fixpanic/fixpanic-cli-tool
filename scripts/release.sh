@@ -101,14 +101,14 @@ fi
 print_success "Latest changes pulled successfully"
 
 # Get the latest tag
-LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
 print_result "Latest tag: $LATEST_TAG"
 
 # Validate tag format
 if [[ ! $LATEST_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     print_warning "Latest tag '$LATEST_TAG' doesn't follow semantic versioning (vX.Y.Z)"
-    print_info "Using v0.0.0 as starting point"
-    LATEST_TAG="v0.0.0"
+    print_info "Using v1.0.0 as starting point"
+    LATEST_TAG="v1.0.0"
 fi
 
 # Parse version (remove 'v' prefix)
