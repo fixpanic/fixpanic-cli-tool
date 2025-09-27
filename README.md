@@ -1,295 +1,220 @@
-# Fixpanic CLI
+# FixPanic CLI
 
-A command-line tool for deploying and managing Fixpanic agents on customer servers. The CLI handles agent installation, configuration, and lifecycle management.
+> **One command to deploy AI-powered server agents anywhere**
 
-## Overview
+The FixPanic CLI is a professional deployment tool for installing and managing AI-powered autonomous agents on your servers. Deploy intelligent monitoring and troubleshooting capabilities in minutes.
 
-The Fixpanic CLI tool simplifies the deployment of Fixpanic agents (connectivity layer) on customer servers. It provides a unified interface for:
+---
 
-- Installing and configuring agents
-- Managing agent lifecycle (start, stop, status)
-- Testing connectivity to Fixpanic infrastructure
-- Validating security rules
-- Viewing agent logs
-
-## Installation
-
-### Quick Install (Recommended)
+## 🚀 Quick Install
 
 ```bash
-curl -fsSL https://get.fixpanic.com/install.sh | bash
+curl -fsSL https://install.fixpanic.com/install.sh | bash
 ```
 
-### Manual Installation
+**That's it!** The script automatically:
+- ✅ Detects your platform (Linux/macOS/Windows)
+- ✅ Downloads the latest version
+- ✅ Installs to the correct location
+- ✅ Adds to your PATH
 
-1. Download the appropriate binary for your platform from the [releases page](https://github.com/fixpanic/fixpanic-cli/releases)
-2. Extract and move to your PATH:
-   ```bash
-   tar -xzf fixpanic-linux-amd64.tar.gz
-   sudo mv fixpanic /usr/local/bin/
-   chmod +x /usr/local/bin/fixpanic
-   ```
+---
 
-### Build from Source
+## 📦 Get Started
 
+### 1. Install an Agent
 ```bash
-git clone https://github.com/fixpanic/fixpanic-cli.git
-cd fixpanic-cli
-go build -o fixpanic
-sudo mv fixpanic /usr/local/bin/
+fixpanic agent install \
+  --agent-id="your-agent-id" \
+  --api-key="your-api-key"
 ```
 
-## Quick Start
-
-1. **Install an agent:**
-   ```bash
-   fixpanic agent install --agent-id="your-agent-id" --api-key="your-api-key"
-   ```
-
-2. **Check agent status:**
-   ```bash
-   fixpanic agent status
-   ```
-
-3. **Start the agent:**
-   ```bash
-   fixpanic agent start
-   ```
-
-## Commands
-
-### Agent Management
-
-#### `fixpanic agent install`
-Install the Fixpanic agent with connectivity layer.
-
-**Flags:**
-- `--agent-id` (required): Agent ID from Fixpanic dashboard
-- `--api-key` (required): Agent API key from Fixpanic dashboard
-- `--socket-server`: Custom socket server address
-- `--force`: Force reinstall even if agent exists
-
-**Example:**
-```bash
-fixpanic agent install --agent-id="agent_123" --api-key="fp_abc123xyz"
-```
-
-#### `fixpanic agent status`
-Check the status of the installed agent.
-
-**Example:**
+### 2. Check Status
 ```bash
 fixpanic agent status
 ```
 
-#### `fixpanic agent start`
-Start the agent service.
-
-**Example:**
+### 3. View Logs
 ```bash
-fixpanic agent start
-```
-
-#### `fixpanic agent stop`
-Stop the agent service.
-
-**Example:**
-```bash
-fixpanic agent stop
-```
-
-#### `fixpanic agent uninstall`
-Uninstall the agent completely.
-
-**Flags:**
-- `--force`: Force uninstall without confirmation
-
-**Example:**
-```bash
-fixpanic agent uninstall
-```
-
-### Development & Testing
-
-#### `fixpanic agent test-connection`
-Test connectivity to Fixpanic infrastructure.
-
-**Example:**
-```bash
-fixpanic agent test-connection
-```
-
-#### `fixpanic agent validate-rules`
-Validate security rules configuration.
-
-**Example:**
-```bash
-fixpanic agent validate-rules
-```
-
-#### `fixpanic agent logs`
-View agent logs.
-
-**Flags:**
-- `--lines, -n`: Number of log lines to show (default: 50)
-- `--follow, -f`: Follow logs in real-time
-
-**Examples:**
-```bash
-fixpanic agent logs
-fixpanic agent logs --lines=100
 fixpanic agent logs --follow
 ```
 
-## Configuration
+---
 
-The CLI creates configuration files in the following locations:
+## 💡 Key Features
 
-### System-wide installation (root):
-- **Binary:** `/usr/local/lib/fixpanic/connectivity`
-- **Config:** `/etc/fixpanic/agent.yaml`
-- **Logs:** `/var/log/fixpanic/agent.log`
-- **Service:** `/etc/systemd/system/fixpanic-agent.service`
+| Feature | Description |
+|---------|-------------|
+| **🤖 AI-Powered** | Autonomous agents that understand natural language requests |
+| **🔒 Security First** | Sandboxed execution with command whitelisting |
+| **📊 Real-time Monitoring** | System metrics, logs, and health monitoring |
+| **🌐 Cross-Platform** | Linux, macOS, Windows support |
+| **⚡ Zero Dependencies** | Single binary with no external requirements |
+| **🔧 Easy Management** | Simple CLI for all agent operations |
 
-### User installation (non-root):
-- **Binary:** `~/.local/lib/fixpanic/connectivity`
-- **Config:** `~/.config/fixpanic/agent.yaml`
-- **Logs:** `~/.local/log/fixpanic/agent.log`
+---
 
-### Configuration File Format
+## 📋 Commands Reference
 
+### Agent Management
+```bash
+# Install agent
+fixpanic agent install --agent-id=<id> --api-key=<key>
+
+# Check status
+fixpanic agent status
+
+# Start/stop agent
+fixpanic agent start
+fixpanic agent stop
+
+# View logs
+fixpanic agent logs [--follow] [--lines=100]
+
+# Validate installation
+fixpanic agent validate
+
+# Uninstall
+fixpanic agent uninstall [--force]
+```
+
+### Get Help
+```bash
+fixpanic --help
+fixpanic agent --help
+fixpanic agent install --help
+```
+
+---
+
+## 🎯 Use Cases
+
+- **DevOps Teams**: Automated server diagnostics and troubleshooting
+- **SRE**: Intelligent incident response and root cause analysis
+- **Monitoring**: AI-powered system health analysis
+- **Support**: Natural language server investigation
+- **Compliance**: Automated security and configuration auditing
+
+---
+
+## 🌍 Platform Support
+
+| Platform | Architecture | Status |
+|----------|--------------|--------|
+| **Linux** | amd64, arm64, 386, arm | ✅ Full Support |
+| **macOS** | amd64 (Intel), arm64 (M1/M2) | ✅ Full Support |
+| **Windows** | amd64 | ✅ Full Support |
+
+**Requirements:**
+- Network access to `socket.fixpanic.com:9000`
+- 50MB disk space
+- Linux: systemd (optional, for service management)
+
+---
+
+## 🔧 Manual Installation
+
+### Download Binary
+```bash
+# Linux (amd64)
+curl -LO https://github.com/fixpanic/fixpanic-cli-tool/releases/latest/download/fixpanic-linux-amd64.tar.gz
+tar -xzf fixpanic-linux-amd64.tar.gz
+sudo mv fixpanic /usr/local/bin/
+
+# macOS (arm64)
+curl -LO https://github.com/fixpanic/fixpanic-cli-tool/releases/latest/download/fixpanic-darwin-arm64.tar.gz
+tar -xzf fixpanic-darwin-arm64.tar.gz
+sudo mv fixpanic /usr/local/bin/
+
+# Verify installation
+fixpanic --version
+```
+
+### Build from Source
+```bash
+git clone https://github.com/fixpanic/fixpanic-cli-tool.git
+cd fixpanic-cli-tool
+go build -o fixpanic
+sudo mv fixpanic /usr/local/bin/
+```
+
+---
+
+## 🔍 Configuration
+
+The agent creates configuration files automatically:
+
+### System Installation (root)
+```
+/usr/local/lib/fixpanic/fixpanic-connectivity-layer
+/etc/fixpanic/agent.yaml
+/var/log/fixpanic/agent.log
+```
+
+### User Installation (non-root)
+```
+~/.local/lib/fixpanic/fixpanic-connectivity-layer
+~/.config/fixpanic/agent.yaml
+~/.local/log/fixpanic/agent.log
+```
+
+### Configuration Format
 ```yaml
-agent:
-  id: "agent_123"
-  api_key: "fp_abc123xyz"
-  socket_server: "socket.fixpanic.com:8080"
-
-security:
-  rules_file: "/etc/fixpanic/security-rules.yaml"
-
+app:
+  agent_id: "your-agent-id"
+  api_key: "your-api-key"
 logging:
   level: "info"
   file: "/var/log/fixpanic/agent.log"
 ```
 
-## Security Rules
+---
 
-Security rules define which commands the agent can execute. The default rules file includes:
+## 🆘 Troubleshooting
 
-### Allowed Commands
-- System monitoring: `ls`, `ps`, `top`, `df`, `free`, `uptime`
-- Network diagnostics: `netstat`, `ss`, `ping`, `traceroute`
-- Container tools: `docker ps`, `docker logs`, `kubectl get`, `kubectl logs`
-- Log viewing: `journalctl`, `systemctl status`
+### Common Issues
 
-### Denied Commands
-- Destructive operations: `rm -rf`, `dd`, `mkfs`, `fdisk`
-- Privilege escalation: `sudo`, `su`, `passwd`
-- Service control: `systemctl restart/stop/start`
-- System shutdown: `reboot`, `shutdown`, `poweroff`
-
-## Platform Support
-
-### Supported Operating Systems
-- Linux (amd64, arm64, 386, arm)
-- macOS (amd64, arm64)
-- Windows (amd64)
-
-### Requirements
-- Systemd (recommended for service management)
-- Network connectivity to Fixpanic infrastructure
-- Sufficient permissions for installation
-
-## Troubleshooting
-
-### Connection Issues
-If the agent cannot connect to Fixpanic infrastructure:
-
-1. **Test connectivity:**
-   ```bash
-   fixpanic agent test-connection
-   ```
-
-2. **Check network settings:**
-   - Verify firewall rules
-   - Check proxy settings
-   - Test DNS resolution
-
-3. **Review logs:**
-   ```bash
-   fixpanic agent logs
-   ```
-
-### Service Issues
-If the systemd service fails to start:
-
-1. **Check service status:**
-   ```bash
-   sudo systemctl status fixpanic-agent
-   ```
-
-2. **Check configuration:**
-   ```bash
-   sudo journalctl -u fixpanic-agent -n 50
-   ```
-
-3. **Verify binary permissions:**
-   ```bash
-   ls -la /usr/local/lib/fixpanic/connectivity
-   ```
-
-### Permission Issues
-If you encounter permission errors:
-
-1. **Run with sudo for system-wide installation:**
-   ```bash
-   sudo fixpanic agent install --agent-id="..." --api-key="..."
-   ```
-
-2. **Use user installation:**
-   ```bash
-   fixpanic agent install --agent-id="..." --api-key="..."
-   ```
-
-## Development
-
-### Building
+**Agent won't start?**
 ```bash
-go build -o fixpanic
+fixpanic agent validate
+fixpanic agent logs
 ```
 
-### Testing
+**Connection problems?**
 ```bash
-go test ./...
+# Test network connectivity
+curl -I socket.fixpanic.com:9000
+# Check firewall/proxy settings
 ```
 
-### Cross-compilation
+**Permission errors?**
 ```bash
-# Linux
-GOOS=linux GOARCH=amd64 go build -o fixpanic-linux-amd64
+# Use sudo for system-wide install
+sudo fixpanic agent install --agent-id=<id> --api-key=<key>
 
-# macOS
-GOOS=darwin GOARCH=amd64 go build -o fixpanic-darwin-amd64
-
-# Windows
-GOOS=windows GOARCH=amd64 go build -o fixpanic-windows-amd64.exe
+# Or install in user directory (default)
+fixpanic agent install --agent-id=<id> --api-key=<key>
 ```
 
-## Contributing
+---
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## 📞 Support
 
-## License
+- 📧 **Email**: [support@fixpanic.com](mailto:support@fixpanic.com)
+- 📖 **Docs**: [docs.fixpanic.com](https://docs.fixpanic.com)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/fixpanic/fixpanic-cli-tool/issues)
+- 💬 **Community**: [Discord](https://discord.gg/fixpanic)
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
 
-## Support
+## 📄 License
 
-For support, please contact:
-- Email: support@fixpanic.com
-- Documentation: https://docs.fixpanic.com
-- Issues: https://github.com/fixpanic/fixpanic-cli/issues
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**[Get Started Now](https://install.fixpanic.com) • [Documentation](https://docs.fixpanic.com) • [GitHub](https://github.com/fixpanic/fixpanic-cli-tool)**
+
+</div>

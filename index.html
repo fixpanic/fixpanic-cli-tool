@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FixPanic CLI - AI-Powered Server Agent Deployment</title>
+    <meta name="description" content="Deploy AI-powered autonomous agents on your servers in minutes. One command installation for intelligent monitoring and troubleshooting.">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom styling -->
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .code-block {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white">
+        <div class="container mx-auto px-6 py-16 text-center">
+            <h1 class="text-5xl font-bold mb-4">FixPanic CLI</h1>
+            <p class="text-xl mb-8 opacity-90">Deploy AI-powered server agents anywhere with one command</p>
+
+            <!-- Install Command -->
+            <div class="max-w-2xl mx-auto bg-black bg-opacity-20 rounded-lg p-6 backdrop-blur-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm opacity-75">Quick Install</span>
+                    <button onclick="copyToClipboard('install-cmd')" class="copy-btn text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">
+                        Copy
+                    </button>
+                </div>
+                <div id="install-cmd" class="text-left text-green-300 font-mono text-lg">
+                    curl -fsSL https://install.fixpanic.com/install.sh | bash
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-12 text-gray-800">Why FixPanic CLI?</h2>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center p-6">
+                    <div class="text-4xl mb-4">🤖</div>
+                    <h3 class="text-xl font-semibold mb-3">AI-Powered</h3>
+                    <p class="text-gray-600">Autonomous agents that understand natural language requests and perform intelligent system analysis.</p>
+                </div>
+
+                <div class="text-center p-6">
+                    <div class="text-4xl mb-4">⚡</div>
+                    <h3 class="text-xl font-semibold mb-3">Zero Dependencies</h3>
+                    <p class="text-gray-600">Single binary installation with no external requirements. Works on Linux, macOS, and Windows.</p>
+                </div>
+
+                <div class="text-center p-6">
+                    <div class="text-4xl mb-4">🔒</div>
+                    <h3 class="text-xl font-semibold mb-3">Security First</h3>
+                    <p class="text-gray-600">Sandboxed execution with command whitelisting. Your systems stay secure by default.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section class="py-16 bg-gray-100">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-12 text-gray-800">Get Started in 3 Steps</h2>
+
+            <div class="max-w-4xl mx-auto space-y-8">
+                <!-- Step 1 -->
+                <div class="bg-white rounded-lg p-6 shadow-sm">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">1</div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold mb-2">Install the CLI</h3>
+                            <div class="code-block text-green-300 text-sm">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-400"># Install FixPanic CLI</span>
+                                    <button onclick="copyToClipboard('step1-cmd')" class="copy-btn text-xs bg-gray-700 px-2 py-1 rounded">Copy</button>
+                                </div>
+                                <div id="step1-cmd">curl -fsSL https://install.fixpanic.com/install.sh | bash</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="bg-white rounded-lg p-6 shadow-sm">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">2</div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold mb-2">Deploy an Agent</h3>
+                            <div class="code-block text-green-300 text-sm">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-400"># Install agent on your server</span>
+                                    <button onclick="copyToClipboard('step2-cmd')" class="copy-btn text-xs bg-gray-700 px-2 py-1 rounded">Copy</button>
+                                </div>
+                                <div id="step2-cmd">fixpanic agent install --agent-id="your-agent-id" --api-key="your-api-key"</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="bg-white rounded-lg p-6 shadow-sm">
+                    <div class="flex items-start space-x-4">
+                        <div class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">3</div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold mb-2">Monitor & Manage</h3>
+                            <div class="code-block text-green-300 text-sm">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-400"># Check agent status</span>
+                                    <button onclick="copyToClipboard('step3-cmd')" class="copy-btn text-xs bg-gray-700 px-2 py-1 rounded">Copy</button>
+                                </div>
+                                <div id="step3-cmd">fixpanic agent status</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Supported Platforms -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold mb-12 text-gray-800">Cross-Platform Support</h2>
+
+            <div class="grid md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+                <div class="p-6">
+                    <div class="text-5xl mb-4">🐧</div>
+                    <h3 class="text-xl font-semibold mb-2">Linux</h3>
+                    <p class="text-gray-600 text-sm">amd64, arm64, 386, arm</p>
+                </div>
+
+                <div class="p-6">
+                    <div class="text-5xl mb-4">🍎</div>
+                    <h3 class="text-xl font-semibold mb-2">macOS</h3>
+                    <p class="text-gray-600 text-sm">Intel & Apple Silicon</p>
+                </div>
+
+                <div class="p-6">
+                    <div class="text-5xl mb-4">🪟</div>
+                    <h3 class="text-xl font-semibold mb-2">Windows</h3>
+                    <p class="text-gray-600 text-sm">amd64</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold mb-4">Ready to Deploy?</h3>
+                <p class="text-gray-300 mb-6">Join thousands of teams using FixPanic for intelligent server monitoring</p>
+
+                <div class="space-x-4">
+                    <a href="https://docs.fixpanic.com" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition">
+                        Documentation
+                    </a>
+                    <a href="https://github.com/fixpanic/fixpanic-cli-tool" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-semibold transition">
+                        GitHub
+                    </a>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-700 pt-8">
+                <p class="text-gray-400">&copy; 2024 FixPanic. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success feedback
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#10b981';
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
