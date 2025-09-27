@@ -93,6 +93,11 @@ func getServicePID() int {
 func runAgentStatus(cmd *cobra.Command, args []string) error {
 	logger.Header("FixPanic Agent Status")
 
+	// Check if running local development version
+	if rootCmd.Version == "dev" {
+		fmt.Println("🚀 Running LOCAL DEVELOPMENT version (built from source)")
+	}
+
 	// Get platform information
 	platformInfo, err := platform.GetPlatformInfo()
 	if err != nil {
