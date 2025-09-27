@@ -2,12 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 
 	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
 	"github.com/fixpanic/fixpanic-cli/internal/logger"
 	"github.com/fixpanic/fixpanic-cli/internal/platform"
+	"github.com/fixpanic/fixpanic-cli/internal/process"
 	"github.com/fixpanic/fixpanic-cli/internal/service"
 	"github.com/spf13/cobra"
 )
@@ -84,24 +83,26 @@ func runAgentStart(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Fallback: run the binary directly (not recommended for production)
-	fmt.Println("⚠️  Systemd not available. Starting agent directly...")
-	fmt.Println("Note: This is not recommended for production use.")
-	fmt.Println("The agent will not restart automatically if it crashes.")
-
+	// Use cross-platform process manager for direct process execution
 	configPath := platformInfo.GetConfigPath()
 
 	fmt.Printf("Starting: %s --config %s\n", binaryPath, configPath)
-	fmt.Println("Press Ctrl+C to stop the agent")
 
-	// Execute the binary directly
-	execCmd := exec.Command(binaryPath, "--config", configPath)
-	execCmd.Stdout = os.Stdout
-	execCmd.Stderr = os.Stderr
+	// Create process manager for the current platform
+	procManager := process.NewProcessManager()
 
-	if err := execCmd.Run(); err != nil {
+	// Start the agent process
+	procInfo, err := procManager.StartProcess(process.ProcessConfig{
+		BinaryPath: binaryPath,
+		Args:       []string{"--config", configPath},
+		Detach:     true,
+	})
+	if err != nil {
 		return fmt.Errorf("failed to start agent: %w", err)
 	}
+
+	fmt.Println("✅ Agent started successfully in background")
+	fmt.Printf("Process PID: %d\n", procInfo.PID)
 
 	return nil
 }

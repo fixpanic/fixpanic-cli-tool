@@ -178,7 +178,7 @@ func (p *PlatformInfo) CreateDirectories() error {
 
 // GetBinaryPath returns the full path to the connectivity binary
 func (p *PlatformInfo) GetBinaryPath() string {
-	return fmt.Sprintf("%s/%s", p.LibDir, GetConnectivityBinaryName())
+	return fmt.Sprintf("%s/%s", p.LibDir, GetFixPanicAgentBinaryName())
 }
 
 // GetConfigPath returns the full path to the agent config file

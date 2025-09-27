@@ -38,7 +38,7 @@ func runAgentConnection(cmd *cobra.Command, args []string) error {
 
 	// Check if connectivity layer is installed
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsInstalled() {
+	if !connectivityManager.IsFixPanicAgentInstalled() {
 		return fmt.Errorf("agent is not installed. Run 'fixpanic agent install' first")
 	}
 

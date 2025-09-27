@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -31,7 +32,10 @@ func NewManager(platform *platform.PlatformInfo) *Manager {
 
 // Download downloads the connectivity layer binary
 func (m *Manager) Download(version string) error {
-	url := platform.GetConnectivityDownloadURL(version)
+	url, err := platform.GetFixPanicAgentDownloadURL(version)
+	if err != nil {
+		return fmt.Errorf("failed to get download URL: %w", err)
+	}
 	binaryPath := m.platform.GetBinaryPath()
 
 	fmt.Printf("Downloading connectivity layer from %s...\n", url)
@@ -174,6 +178,14 @@ func (m *Manager) DownloadFixPanicAgent(version string) error {
 	if err := os.Chmod(tmpFile, 0755); err != nil {
 		os.Remove(tmpFile)
 		return fmt.Errorf("failed to make binary executable: %w", err)
+	}
+
+	// On macOS, remove quarantine attribute to allow execution
+	if runtime.GOOS == "darwin" {
+		if err := exec.Command("xattr", "-d", "com.apple.quarantine", tmpFile).Run(); err != nil {
+			// Log warning but don't fail - quarantine removal is not critical
+			logger.Warning("Failed to remove quarantine attribute: %v", err)
+		}
 	}
 
 	// Move to final location

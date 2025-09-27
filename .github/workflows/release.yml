@@ -114,7 +114,7 @@ jobs:
             
             ### Quick Install
             ```bash
-            curl -fsSL https://get.fixpanic.com/install.sh | bash
+            curl -fsSL https://install.fixpanic.com/install.sh | bash
             ```
             
             ### Manual Installation
