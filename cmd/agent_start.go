@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
+	"github.com/fixpanic/fixpanic-cli/internal/logger"
 	"github.com/fixpanic/fixpanic-cli/internal/platform"
 	"github.com/fixpanic/fixpanic-cli/internal/service"
 	"github.com/spf13/cobra"
@@ -28,7 +30,7 @@ func init() {
 }
 
 func runAgentStart(cmd *cobra.Command, args []string) error {
-	fmt.Println("Starting Fixpanic agent...")
+	logger.Header("Starting FixPanic Agent")
 
 	// Get platform information
 	platformInfo, err := platform.GetPlatformInfo()
@@ -36,17 +38,29 @@ func runAgentStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get platform info: %w", err)
 	}
 
-	// Check if FixPanic Agent binary is installed
-	binaryPath := platformInfo.GetFixPanicAgentBinaryPath()
-	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-		return fmt.Errorf("FixPanic Agent binary not found at %s. Run 'fixpanic agent install' first", binaryPath)
+	// Check if agent is installed and ensure it's the latest version
+	logger.Step(1, "Checking agent installation and updates")
+	connectivityManager := connectivity.NewManager(platformInfo)
+
+	if !connectivityManager.IsFixPanicAgentInstalled() {
+		return fmt.Errorf("FixPanic Agent not installed. Run 'fixpanic agent install' first")
 	}
 
+	// Ensure we have the latest version before starting
+	if err := connectivityManager.EnsureLatestAgent(); err != nil {
+		logger.Warning("Failed to check for agent updates: %v", err)
+		logger.Info("Continuing with existing agent binary")
+	}
+
+	binaryPath := platformInfo.GetFixPanicAgentBinaryPath()
+
 	// Try to use systemd service if available
+	logger.Step(2, "Starting agent service")
 	if platform.IsSystemdAvailable() {
 		serviceManager := service.NewManager(platformInfo)
 
 		// Check current status
+		logger.Progress("Checking service status")
 		status, err := serviceManager.Status()
 		if err != nil {
 			fmt.Printf("Warning: could not check service status: %v\n", err)

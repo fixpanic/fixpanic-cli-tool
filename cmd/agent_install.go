@@ -77,10 +77,10 @@ func runAgentInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("FixPanic Agent is already installed. Use --force to reinstall")
 	}
 
-	// Download FixPanic Agent binary (CORRECTED)
-	logger.Step(3, "Downloading FixPanic Agent binary")
-	if err := connectivityManager.DownloadFixPanicAgent("latest"); err != nil {
-		return fmt.Errorf("failed to download FixPanic Agent binary: %w", err)
+	// Ensure latest agent binary (auto-update)
+	logger.Step(3, "Ensuring latest agent binary")
+	if err := connectivityManager.EnsureLatestAgent(); err != nil {
+		return fmt.Errorf("failed to ensure latest agent binary: %w", err)
 	}
 
 	// Create configuration

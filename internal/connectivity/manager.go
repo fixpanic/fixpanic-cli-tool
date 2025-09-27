@@ -2,12 +2,14 @@ package connectivity
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/fixpanic/fixpanic-cli/internal/logger"
 	"github.com/fixpanic/fixpanic-cli/internal/platform"
@@ -246,4 +248,110 @@ func (m *Manager) RemoveFixPanicAgent() error {
 func (m *Manager) Update(version string) error {
 	fmt.Println("WARNING: Update() is deprecated, use UpdateFixPanicAgent() instead")
 	return m.UpdateFixPanicAgent(version)
+}
+
+// AgentRelease represents a GitHub release for the agent binary
+type AgentRelease struct {
+	TagName     string `json:"tag_name"`
+	Name        string `json:"name"`
+	PublishedAt string `json:"published_at"`
+}
+
+// GetLatestAgentVersion fetches the latest agent version from GitHub releases
+func (m *Manager) GetLatestAgentVersion() (string, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	url := "https://api.github.com/repos/fixpanic/fixpanic-connectivity-layer-release/releases/latest"
+
+	resp, err := client.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch latest release: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("GitHub API request failed: %d", resp.StatusCode)
+	}
+
+	var release AgentRelease
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return "", fmt.Errorf("failed to parse release info: %w", err)
+	}
+
+	return release.TagName, nil
+}
+
+// IsAgentUpdateAvailable checks if a newer version of the agent is available
+func (m *Manager) IsAgentUpdateAvailable() (bool, string, error) {
+	if !m.IsFixPanicAgentInstalled() {
+		return true, "", nil // Need to install
+	}
+
+	currentVersion, err := m.GetFixPanicAgentVersion()
+	if err != nil {
+		return true, "", fmt.Errorf("failed to get current version: %w", err)
+	}
+
+	latestVersion, err := m.GetLatestAgentVersion()
+	if err != nil {
+		return false, "", fmt.Errorf("failed to get latest version: %w", err)
+	}
+
+	// Parse version strings to compare them
+	// For simplicity, we'll do string comparison since they follow semantic versioning
+	currentClean := strings.TrimSpace(currentVersion)
+	latestClean := strings.TrimSpace(latestVersion)
+
+	// Extract version from output like "fixpanic-connectivity-layer v1.0.0 - ..."
+	if strings.Contains(currentClean, " v") {
+		parts := strings.Split(currentClean, " v")
+		if len(parts) > 1 {
+			versionPart := strings.Split(parts[1], " ")[0]
+			currentClean = "v" + versionPart
+		}
+	}
+
+	return currentClean != latestClean, latestClean, nil
+}
+
+// EnsureLatestAgent checks and updates the agent binary if needed
+func (m *Manager) EnsureLatestAgent() error {
+	logger.Progress("Checking for agent binary updates")
+
+	updateAvailable, latestVersion, err := m.IsAgentUpdateAvailable()
+	if err != nil {
+		logger.Warning("Failed to check for updates: %v", err)
+		// Continue with existing binary if update check fails
+		return nil
+	}
+
+	if !updateAvailable {
+		if m.IsFixPanicAgentInstalled() {
+			logger.List("Agent binary is up to date")
+		}
+		return nil
+	}
+
+	// Update or install the agent
+	if m.IsFixPanicAgentInstalled() {
+		currentVersion, _ := m.GetFixPanicAgentVersion()
+		logger.Info("Agent update available: %s → %s", currentVersion, latestVersion)
+		logger.Progress("Downloading latest agent binary")
+	} else {
+		logger.Progress("Installing agent binary")
+	}
+
+	if err := m.DownloadFixPanicAgent("latest"); err != nil {
+		return fmt.Errorf("failed to download latest agent: %w", err)
+	}
+
+	// Verify the update
+	newVersion, err := m.GetFixPanicAgentVersion()
+	if err != nil {
+		logger.Warning("Failed to verify new version: %v", err)
+	} else {
+		logger.Success("Agent binary updated to: %s", newVersion)
+	}
+
+	return nil
 }
