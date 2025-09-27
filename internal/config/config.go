@@ -10,19 +10,13 @@ import (
 
 // AgentConfig represents the agent configuration
 type AgentConfig struct {
-	Agent    AgentSection    `yaml:"agent"`
-	Security SecuritySection `yaml:"security"`
-	Logging  LoggingSection  `yaml:"logging"`
+	App     AppSection     `yaml:"app"`
+	Logging LoggingSection `yaml:"logging"`
 }
 
-type AgentSection struct {
-	ID           string `yaml:"id"`
-	APIKey       string `yaml:"api_key"`
-	SocketServer string `yaml:"socket_server"`
-}
-
-type SecuritySection struct {
-	RulesFile string `yaml:"rules_file"`
+type AppSection struct {
+	AgentID string `yaml:"agent_id"`
+	APIKey  string `yaml:"api_key"`
 }
 
 type LoggingSection struct {
@@ -33,12 +27,7 @@ type LoggingSection struct {
 // DefaultConfig returns a default configuration
 func DefaultConfig() *AgentConfig {
 	return &AgentConfig{
-		Agent: AgentSection{
-			SocketServer: "socket.fixpanic.com:8080",
-		},
-		Security: SecuritySection{
-			RulesFile: "/etc/fixpanic/security-rules.yaml",
-		},
+		App: AppSection{},
 		Logging: LoggingSection{
 			Level: "info",
 			File:  "/var/log/fixpanic/agent.log",
@@ -83,14 +72,11 @@ func SaveConfig(config *AgentConfig, path string) error {
 
 // Validate validates the configuration
 func (c *AgentConfig) Validate() error {
-	if c.Agent.ID == "" {
+	if c.App.AgentID == "" {
 		return fmt.Errorf("agent ID is required")
 	}
-	if c.Agent.APIKey == "" {
+	if c.App.APIKey == "" {
 		return fmt.Errorf("agent API key is required")
-	}
-	if c.Agent.SocketServer == "" {
-		return fmt.Errorf("socket server address is required")
 	}
 	return nil
 }

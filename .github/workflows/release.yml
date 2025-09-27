@@ -173,23 +173,3 @@ jobs:
               fi
             fi
           done
-
-  # notify:
-  #   name: Notify Release
-  #   needs: [build, release]
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   steps:
-  #     - name: Notify Slack
-  #       if: success()
-  #       uses: 8398a7/action-slack@v3
-  #       with:
-  #         status: success
-  #         text: |
-  #           🎉 Fixpanic CLI ${{ needs.build.outputs.version }} released successfully!
-            
-  #           📦 Binaries: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build.outputs.version }}
-  #           🐳 Docker: fixpanic/fixpanic-cli:${{ needs.build.outputs.version }}
-  #           📖 Docs: https://github.com/${{ github.repository }}/blob/main/README.md
-  #       env:
-  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

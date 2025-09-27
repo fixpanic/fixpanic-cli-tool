@@ -5,11 +5,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/fixpanic/fixpanic-cli/internal/config"
 	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
 	"github.com/fixpanic/fixpanic-cli/internal/platform"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // agentConnectionCmd represents the agent test-connection command
@@ -44,21 +42,8 @@ func runAgentConnection(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("agent is not installed. Run 'fixpanic agent install' first")
 	}
 
-	// Load configuration
-	configPath := platformInfo.GetConfigPath()
-	agentConfig, err := config.LoadConfig(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
-	}
-
-	// Test socket server connection
-	socketServer := agentConfig.Agent.SocketServer
-	if socketServer == "" {
-		socketServer = viper.GetString("socket_server")
-		if socketServer == "" {
-			socketServer = "socket.fixpanic.com:8080"
-		}
-	}
+	// Test socket server connection (hardcoded in agent)
+	socketServer := "socket.fixpanic.com:8080"
 
 	fmt.Printf("Testing connection to: %s\n", socketServer)
 

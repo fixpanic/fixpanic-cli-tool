@@ -119,10 +119,21 @@ download_binary() {
 
     print_info "Download URL: $DOWNLOAD_URL"
 
+    # Download with better error handling
     if $DOWNLOAD_CMD "$DOWNLOAD_URL" > "$ARCHIVE_PATH"; then
         print_success "Download completed"
     else
-        print_error "Download failed"
+        print_error "Download failed. Please check:"
+        print_error "1. Version $VERSION exists"
+        print_error "2. Asset $ARCHIVE_NAME is available"
+        print_error "3. Network connectivity"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
+
+    # Verify download
+    if [ ! -s "$ARCHIVE_PATH" ]; then
+        print_error "Downloaded file is empty"
         rm -rf "$TEMP_DIR"
         exit 1
     fi
@@ -132,16 +143,44 @@ download_binary() {
         chmod +x "$BINARY_PATH"
     else
         # Extract the binary from the tar.gz
-        tar -xzf "$ARCHIVE_PATH" -C "$TEMP_DIR"
+        print_info "Extracting archive..."
+        if tar -xzf "$ARCHIVE_PATH" -C "$TEMP_DIR"; then
+            print_success "Extraction completed"
+        else
+            print_error "Failed to extract archive"
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
+        
         BINARY_PATH="$TEMP_DIR/${ARTIFACT_NAME}"
+        
+        # Check if extracted binary exists
+        if [ ! -f "$BINARY_PATH" ]; then
+            print_error "Binary not found after extraction: ${ARTIFACT_NAME}"
+            print_info "Available files in archive:"
+            tar -tzf "$ARCHIVE_PATH" || true
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
+        
         chmod +x "$BINARY_PATH"
     fi
 
     # Verify the binary
     if [ -x "$BINARY_PATH" ]; then
         print_success "Binary verification passed"
+        
+        # Test if binary can run (basic compatibility check)
+        if "$BINARY_PATH" --version >/dev/null 2>&1 || [ $? -eq 1 ]; then
+            print_success "Binary compatibility verified"
+        else
+            print_error "Binary appears to be incompatible with this system"
+            print_error "This might be due to architecture mismatch"
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
     else
-        print_error "Binary verification failed"
+        print_error "Binary verification failed - file is not executable"
         rm -rf "$TEMP_DIR"
         exit 1
     fi
@@ -190,10 +229,21 @@ install_binary() {
     # Verify installation
     if command -v "$BINARY_NAME" >/dev/null 2>&1; then
         print_success "Fixpanic CLI installed successfully"
+        
+        # Test basic functionality
+        if "$BINARY_NAME" --version >/dev/null 2>&1; then
+            print_success "Binary is working correctly"
+            VERSION_OUTPUT=$("$BINARY_NAME" --version 2>/dev/null || echo "unknown")
+            print_info "Installed version: $VERSION_OUTPUT"
+        else
+            print_warning "Binary installed but --version command failed"
+        fi
+        
         print_info "Run '$BINARY_NAME --help' to get started"
     else
         print_warning "Installation completed but binary not found in PATH"
         print_info "You may need to restart your shell or add $TARGET_DIR to your PATH"
+        print_info "Or run the binary directly: $TARGET_PATH"
     fi
 }
 

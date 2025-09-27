@@ -48,12 +48,12 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("✅ Agent is installed")
 
-	// Get connectivity layer version
-	version, err := connectivityManager.GetVersion()
+	// Get FixPanic Agent version
+	version, err := connectivityManager.GetFixPanicAgentVersion()
 	if err != nil {
-		fmt.Printf("⚠️  Could not determine connectivity layer version: %v\n", err)
+		fmt.Printf("⚠️  Could not determine FixPanic Agent version: %v\n", err)
 	} else {
-		fmt.Printf("📦 Connectivity layer version: %s\n", version)
+		fmt.Printf("📦 FixPanic Agent version: %s\n", version)
 	}
 
 	// Check configuration
@@ -63,8 +63,8 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 		fmt.Printf("⚠️  Could not load configuration: %v\n", err)
 	} else {
 		fmt.Printf("🔧 Configuration file: %s\n", configPath)
-		fmt.Printf("   Agent ID: %s\n", agentConfig.Agent.ID)
-		fmt.Printf("   Socket Server: %s\n", agentConfig.Agent.SocketServer)
+		fmt.Printf("   Agent ID: %s\n", agentConfig.App.AgentID)
+		fmt.Printf("   Log level: %s\n", agentConfig.Logging.Level)
 	}
 
 	// Check service status
@@ -100,7 +100,7 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check binary location
-	binaryPath := platformInfo.GetBinaryPath()
+	binaryPath := platformInfo.GetFixPanicAgentBinaryPath()
 	if _, err := os.Stat(binaryPath); err == nil {
 		fmt.Printf("📍 Binary location: %s\n", binaryPath)
 	}

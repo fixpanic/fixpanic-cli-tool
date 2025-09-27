@@ -56,38 +56,88 @@ func GetPlatformInfo() (*PlatformInfo, error) {
 	}, nil
 }
 
-// GetConnectivityBinaryName returns the connectivity binary name for the current platform
-func GetConnectivityBinaryName() string {
-	os := runtime.GOOS
-	if os == "windows" {
-		return "connectivity.exe"
+// GetFixPanicAgentBinaryName returns the correct binary name for FixPanic Agent
+func GetFixPanicAgentBinaryName() string {
+	if runtime.GOOS == "windows" {
+		return "fixpanic-connectivity-layer.exe"
 	}
-	return "connectivity"
+	return "fixpanic-connectivity-layer"
 }
 
-// GetConnectivityDownloadURL returns the download URL for the connectivity binary
-func GetConnectivityDownloadURL(version string) string {
-	os := runtime.GOOS
-	arch := runtime.GOARCH
+// GetConnectivityBinaryName returns the connectivity binary name for the current platform (DEPRECATED)
+// TODO: Remove this function after migration to GetFixPanicAgentBinaryName
+func GetConnectivityBinaryName() string {
+	fmt.Println("WARNING: GetConnectivityBinaryName is deprecated, use GetFixPanicAgentBinaryName instead")
+	return GetFixPanicAgentBinaryName()
+}
 
-	// Map Go arch names to our release names
-	archMap := map[string]string{
-		"amd64": "amd64",
-		"arm64": "arm64",
-		"386":   "386",
-		"arm":   "arm",
+// GetFixPanicAgentBinaryPath returns the path to the FixPanic Agent binary
+func (p *PlatformInfo) GetFixPanicAgentBinaryPath() string {
+	return fmt.Sprintf("%s/%s", p.LibDir, GetFixPanicAgentBinaryName())
+}
+
+// GetFixPanicAgentPlatformInfo returns normalized platform info matching task requirements
+func GetFixPanicAgentPlatformInfo() (os, arch string, err error) {
+	goos := runtime.GOOS
+	goarch := runtime.GOARCH
+
+	// Normalize OS names as per task prompt
+	switch goos {
+	case "linux":
+		os = "linux"
+	case "darwin":
+		os = "darwin"
+	case "windows":
+		os = "windows"
+	default:
+		return "", "", fmt.Errorf("unsupported operating system: %s", goos)
 	}
 
-	releaseArch, ok := archMap[arch]
-	if !ok {
-		releaseArch = arch
+	// Normalize architecture names (x86_64 -> amd64 as per task prompt)
+	switch goarch {
+	case "amd64", "x86_64":
+		arch = "amd64"
+	case "arm64", "aarch64":
+		arch = "arm64"
+	case "386", "i386", "i686":
+		arch = "386"
+	case "arm", "armv7":
+		arch = "arm"
+	default:
+		return "", "", fmt.Errorf("unsupported architecture: %s", goarch)
 	}
 
-	baseURL := "https://releases.fixpanic.com/connectivity"
+	return os, arch, nil
+}
+
+// GetFixPanicAgentDownloadURL returns the correct GitHub Releases URL
+func GetFixPanicAgentDownloadURL(version string) (string, error) {
+	os, arch, err := GetFixPanicAgentPlatformInfo()
+	if err != nil {
+		return "", fmt.Errorf("failed to get platform info: %w", err)
+	}
+
+	// Construct URL as per task prompt requirements
+	baseURL := "https://github.com/fixpanic/fixpanic-connectivity-layer-release/releases"
+
 	if version == "latest" {
-		return fmt.Sprintf("%s/latest/connectivity-%s-%s", baseURL, os, releaseArch)
+		return fmt.Sprintf("%s/latest/download/fixpanic-connectivity-layer-%s-%s", baseURL, os, arch), nil
 	}
-	return fmt.Sprintf("%s/%s/connectivity-%s-%s", baseURL, version, os, releaseArch)
+
+	return fmt.Sprintf("%s/download/%s/fixpanic-connectivity-layer-%s-%s", baseURL, version, os, arch), nil
+}
+
+// GetConnectivityDownloadURL returns the download URL for the connectivity binary (DEPRECATED)
+// TODO: Remove this function after migration to GetFixPanicAgentDownloadURL
+func GetConnectivityDownloadURL(version string) string {
+	fmt.Println("WARNING: GetConnectivityDownloadURL is deprecated, use GetFixPanicAgentDownloadURL instead")
+	url, err := GetFixPanicAgentDownloadURL(version)
+	if err != nil {
+		// For backward compatibility, return empty string on error
+		fmt.Printf("Error getting download URL: %v\n", err)
+		return ""
+	}
+	return url
 }
 
 // IsCommandAvailable checks if a command is available in PATH
@@ -106,7 +156,7 @@ func IsSystemdAvailable() bool {
 
 // GetSystemdServiceName returns the systemd service name
 func GetSystemdServiceName() string {
-	return "fixpanic-agent.service"
+	return "fixpanic-connectivity-layer.service"
 }
 
 // CreateDirectories creates the necessary directories for the agent

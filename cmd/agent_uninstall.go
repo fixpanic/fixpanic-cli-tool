@@ -45,10 +45,10 @@ func runAgentUninstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get platform info: %w", err)
 	}
 
-	// Check if connectivity layer is installed
+	// Check if FixPanic Agent is installed
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsInstalled() {
-		fmt.Println("ℹ️  Agent is not installed")
+	if !connectivityManager.IsFixPanicAgentInstalled() {
+		fmt.Println("ℹ️  FixPanic Agent is not installed")
 		return nil
 	}
 
@@ -91,9 +91,9 @@ func runAgentUninstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Remove connectivity layer binary
-	fmt.Println("Removing connectivity layer binary...")
-	if err := connectivityManager.Remove(); err != nil {
+	// Remove FixPanic Agent binary
+	fmt.Println("Removing FixPanic Agent binary...")
+	if err := connectivityManager.RemoveFixPanicAgent(); err != nil {
 		fmt.Printf("Warning: failed to remove binary: %v\n", err)
 	}
 

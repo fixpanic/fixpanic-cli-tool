@@ -8,13 +8,11 @@ import (
 	"github.com/fixpanic/fixpanic-cli/internal/platform"
 	"github.com/fixpanic/fixpanic-cli/internal/service"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
 	agentID      string
 	agentAPIKey  string
-	socketServer string
 	forceInstall bool
 )
 
@@ -23,18 +21,15 @@ var agentInstallCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install Fixpanic agent",
 	Long: `Install the Fixpanic agent on your server.
-	
+
 This command downloads and installs the connectivity layer binary, creates the
 necessary configuration files, and sets up the systemd service for automatic
 startup.`,
 	Example: `  # Install with agent credentials
-  fixpanic agent install --agent-id="agent_123" --api-key="fp_abc123xyz"
-  
-  # Install with custom socket server
-  fixpanic agent install --agent-id="agent_123" --api-key="fp_abc123xyz" --socket-server="custom.socket.com:8080"
-  
-  # Force reinstall
-  fixpanic agent install --agent-id="agent_123" --api-key="fp_abc123xyz" --force`,
+	 fixpanic agent install --agent-id="agent_123" --api-key="fp_abc123xyz"
+
+	 # Force reinstall
+	 fixpanic agent install --agent-id="agent_123" --api-key="fp_abc123xyz" --force`,
 	RunE: runAgentInstall,
 }
 
@@ -44,7 +39,6 @@ func init() {
 	// Add flags
 	agentInstallCmd.Flags().StringVar(&agentID, "agent-id", "", "Agent ID from Fixpanic dashboard (required)")
 	agentInstallCmd.Flags().StringVar(&agentAPIKey, "api-key", "", "Agent API key from Fixpanic dashboard (required)")
-	agentInstallCmd.Flags().StringVar(&socketServer, "socket-server", "", "Socket server address (overrides config)")
 	agentInstallCmd.Flags().BoolVar(&forceInstall, "force", false, "Force reinstall even if agent is already installed")
 
 	// Mark required flags
@@ -73,29 +67,22 @@ func runAgentInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create directories: %w", err)
 	}
 
-	// Check if already installed
+	// Check if FixPanic Agent is already installed
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if connectivityManager.IsInstalled() && !forceInstall {
-		return fmt.Errorf("agent is already installed. Use --force to reinstall")
+	if connectivityManager.IsFixPanicAgentInstalled() && !forceInstall {
+		return fmt.Errorf("FixPanic Agent is already installed. Use --force to reinstall")
 	}
 
-	// Download connectivity layer
-	fmt.Println("Downloading connectivity layer...")
-	if err := connectivityManager.Download("latest"); err != nil {
-		return fmt.Errorf("failed to download connectivity layer: %w", err)
+	// Download FixPanic Agent binary (CORRECTED)
+	fmt.Println("Downloading FixPanic Agent binary...")
+	if err := connectivityManager.DownloadFixPanicAgent("latest"); err != nil {
+		return fmt.Errorf("failed to download FixPanic Agent binary: %w", err)
 	}
 
 	// Create configuration
 	agentConfig := config.DefaultConfig()
-	agentConfig.Agent.ID = agentID
-	agentConfig.Agent.APIKey = agentAPIKey
-
-	// Use socket server from flag if provided, otherwise use default or config
-	if socketServer != "" {
-		agentConfig.Agent.SocketServer = socketServer
-	} else if viper.GetString("socket_server") != "" {
-		agentConfig.Agent.SocketServer = viper.GetString("socket_server")
-	}
+	agentConfig.App.AgentID = agentID
+	agentConfig.App.APIKey = agentAPIKey
 
 	// Validate configuration
 	if err := agentConfig.Validate(); err != nil {
@@ -140,9 +127,9 @@ func runAgentInstall(cmd *cobra.Command, args []string) error {
 		fmt.Println("Systemd not available. You can start the agent manually with: fixpanic agent start")
 	}
 
-	fmt.Println("\n✅ Fixpanic agent installed successfully!")
+	fmt.Println("\n✅ FixPanic agent installed successfully!")
 	fmt.Printf("Agent ID: %s\n", agentID)
-	fmt.Printf("Binary location: %s\n", platformInfo.GetBinaryPath())
+	fmt.Printf("Binary location: %s\n", platformInfo.GetFixPanicAgentBinaryPath())
 	fmt.Printf("Config location: %s\n", configPath)
 
 	if platform.IsSystemdAvailable() {

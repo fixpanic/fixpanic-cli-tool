@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
 	"github.com/fixpanic/fixpanic-cli/internal/platform"
 	"github.com/fixpanic/fixpanic-cli/internal/service"
 	"github.com/spf13/cobra"
@@ -37,10 +36,10 @@ func runAgentStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get platform info: %w", err)
 	}
 
-	// Check if connectivity layer is installed
-	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsInstalled() {
-		return fmt.Errorf("agent is not installed. Run 'fixpanic agent install' first")
+	// Check if FixPanic Agent binary is installed
+	binaryPath := platformInfo.GetFixPanicAgentBinaryPath()
+	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+		return fmt.Errorf("FixPanic Agent binary not found at %s. Run 'fixpanic agent install' first", binaryPath)
 	}
 
 	// Try to use systemd service if available
@@ -76,7 +75,6 @@ func runAgentStart(cmd *cobra.Command, args []string) error {
 	fmt.Println("Note: This is not recommended for production use.")
 	fmt.Println("The agent will not restart automatically if it crashes.")
 
-	binaryPath := connectivityManager.GetBinaryPath()
 	configPath := platformInfo.GetConfigPath()
 
 	fmt.Printf("Starting: %s --config %s\n", binaryPath, configPath)
