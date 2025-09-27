@@ -6,6 +6,7 @@ import (
 
 	"github.com/fixpanic/fixpanic-cli/internal/config"
 	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
+	"github.com/fixpanic/fixpanic-cli/internal/logger"
 	"github.com/fixpanic/fixpanic-cli/internal/platform"
 	"github.com/spf13/cobra"
 )
@@ -28,21 +29,23 @@ func init() {
 }
 
 func runAgentValidate(cmd *cobra.Command, args []string) error {
-	fmt.Println("Validating agent installation and configuration...")
+	logger.Header("Validating Agent Installation")
 
 	// Get platform information
+	logger.Step(1, "Detecting platform and configuration")
 	platformInfo, err := platform.GetPlatformInfo()
 	if err != nil {
 		return fmt.Errorf("failed to get platform info: %w", err)
 	}
 
 	// Check if FixPanic Agent is installed
+	logger.Step(2, "Checking agent binary installation")
 	connectivityManager := connectivity.NewManager(platformInfo)
 	if !connectivityManager.IsFixPanicAgentInstalled() {
 		return fmt.Errorf("FixPanic Agent is not installed. Run 'fixpanic agent install' first")
 	}
 
-	fmt.Printf("✅ FixPanic Agent binary found: %s\n", connectivityManager.GetBinaryPath())
+	logger.List("FixPanic Agent binary found: %s", connectivityManager.GetBinaryPath())
 
 	// Load configuration
 	configPath := platformInfo.GetConfigPath()

@@ -6,6 +6,7 @@ import (
 
 	"github.com/fixpanic/fixpanic-cli/internal/config"
 	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
+	"github.com/fixpanic/fixpanic-cli/internal/logger"
 	"github.com/fixpanic/fixpanic-cli/internal/platform"
 	"github.com/fixpanic/fixpanic-cli/internal/service"
 	"github.com/spf13/cobra"
@@ -29,7 +30,7 @@ func init() {
 }
 
 func runAgentStatus(cmd *cobra.Command, args []string) error {
-	fmt.Println("Checking Fixpanic agent status...")
+	logger.Header("FixPanic Agent Status")
 
 	// Get platform information
 	platformInfo, err := platform.GetPlatformInfo()
@@ -40,31 +41,32 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 	// Check if connectivity layer is installed
 	connectivityManager := connectivity.NewManager(platformInfo)
 	if !connectivityManager.IsInstalled() {
-		fmt.Println("❌ Agent is not installed")
-		fmt.Println("\nTo install the agent, run:")
-		fmt.Println("  fixpanic agent install --agent-id=<your-agent-id> --api-key=<your-api-key>")
+		logger.Error("Agent is not installed")
+		logger.Separator()
+		logger.Info("To install the agent, run:")
+		logger.Command("fixpanic agent install --agent-id=<your-agent-id> --api-key=<your-api-key>")
 		return nil
 	}
 
-	fmt.Println("✅ Agent is installed")
+	logger.Success("Agent is installed")
 
 	// Get FixPanic Agent version
 	version, err := connectivityManager.GetFixPanicAgentVersion()
 	if err != nil {
-		fmt.Printf("⚠️  Could not determine FixPanic Agent version: %v\n", err)
+		logger.Warning("Could not determine FixPanic Agent version: %v", err)
 	} else {
-		fmt.Printf("📦 FixPanic Agent version: %s\n", version)
+		logger.KeyValue("Version", version)
 	}
 
 	// Check configuration
 	configPath := platformInfo.GetConfigPath()
 	agentConfig, err := config.LoadConfig(configPath)
 	if err != nil {
-		fmt.Printf("⚠️  Could not load configuration: %v\n", err)
+		logger.Warning("Could not load configuration: %v", err)
 	} else {
-		fmt.Printf("🔧 Configuration file: %s\n", configPath)
-		fmt.Printf("   Agent ID: %s\n", agentConfig.App.AgentID)
-		fmt.Printf("   Log level: %s\n", agentConfig.Logging.Level)
+		logger.KeyValue("Configuration file", configPath)
+		logger.KeyValue("Agent ID", agentConfig.App.AgentID)
+		logger.KeyValue("Log level", agentConfig.Logging.Level)
 	}
 
 	// Check service status

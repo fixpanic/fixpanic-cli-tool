@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/fixpanic/fixpanic-cli/internal/logger"
 	"github.com/fixpanic/fixpanic-cli/internal/platform"
 )
 
@@ -134,20 +135,24 @@ func (m *Manager) DownloadFixPanicAgent(version string) error {
 
 	binaryPath := m.platform.GetFixPanicAgentBinaryPath()
 
-	fmt.Printf("Downloading FixPanic Agent from %s...\n", downloadURL)
+	logger.Loading("Downloading from %s...", downloadURL)
 
 	// Create temporary file
 	tmpFile := binaryPath + ".tmp"
 
 	resp, err := m.client.Get(downloadURL)
 	if err != nil {
+		logger.LoadingFailed("Failed to download")
 		return fmt.Errorf("failed to download binary: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		logger.LoadingFailed("HTTP %d", resp.StatusCode)
 		return fmt.Errorf("failed to download binary: HTTP %d", resp.StatusCode)
 	}
+
+	logger.LoadingDone("Download started")
 
 	// Create the file
 	out, err := os.Create(tmpFile)
@@ -175,7 +180,7 @@ func (m *Manager) DownloadFixPanicAgent(version string) error {
 		return fmt.Errorf("failed to move binary to final location: %w", err)
 	}
 
-	fmt.Printf("FixPanic Agent downloaded to %s\n", binaryPath)
+	logger.Success("FixPanic Agent downloaded to %s", binaryPath)
 	return nil
 }
 
