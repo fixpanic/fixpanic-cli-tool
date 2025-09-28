@@ -42,8 +42,8 @@ func runAgentConnection(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("agent is not installed. Run 'fixpanic agent install' first")
 	}
 
-	// Test socket server connection (hardcoded in agent)
-	socketServer := "socket.fixpanic.com:8080"
+	// Test socket server connection (same as agent uses)
+	socketServer := "socket.fixpanic.com:9000"
 
 	fmt.Printf("Testing connection to: %s\n", socketServer)
 

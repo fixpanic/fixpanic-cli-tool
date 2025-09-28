@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
 	"github.com/fixpanic/fixpanic-cli/internal/logger"
@@ -37,24 +40,77 @@ func runAgentStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get platform info: %w", err)
 	}
 
-	// Check if agent is installed and ensure it's the latest version
-	logger.Step(1, "Checking agent installation and updates")
+	// Validate agent installation
+	connectivityManager, err := validateAgentInstall(platformInfo)
+	if err != nil {
+		return err
+	}
+
+	// Clean up old agents
+	logger.Step(2, "Checking for existing agent processes")
+	if err := cleanUpOldAgents(); err != nil {
+		return err
+	}
+
+	// Start the agent service
+	return startAgentService(platformInfo, connectivityManager)
+}
+
+// validateAgentInstall checks if the agent is installed
+func validateAgentInstall(platformInfo *platform.PlatformInfo) (*connectivity.Manager, error) {
+	logger.Step(1, "Checking agent installation")
 	connectivityManager := connectivity.NewManager(platformInfo)
 
 	if !connectivityManager.IsFixPanicAgentInstalled() {
-		return fmt.Errorf("FixPanic Agent not installed. Run 'fixpanic agent install' first")
+		return nil, fmt.Errorf("FixPanic Agent not installed. Run 'fixpanic agent install' first")
 	}
 
-	// Ensure we have the latest version before starting
-	if err := connectivityManager.EnsureLatestAgent(); err != nil {
-		logger.Warning("Failed to check for agent updates: %v", err)
-		logger.Info("Continuing with existing agent binary")
+	logger.Success("Agent installation verified")
+	return connectivityManager, nil
+}
+
+// cleanUpOldAgents stops any existing agent processes before starting a new one
+func cleanUpOldAgents() error {
+	existingPIDs, err := getAllAgentProcessPIDs()
+	if err != nil {
+		return fmt.Errorf("failed to check for existing agent processes: %w", err)
 	}
 
+	if len(existingPIDs) > 0 {
+		fmt.Printf("⚠️  Found %d existing agent process(es) running:\n", len(existingPIDs))
+		for _, pid := range existingPIDs {
+			fmt.Printf("   - PID: %d\n", pid)
+		}
+		fmt.Println("🛑 Stopping existing processes before starting new agent...")
+
+		// Stop all existing processes
+		procManager := process.NewProcessManager()
+		stoppedCount := 0
+		for _, pid := range existingPIDs {
+			if err := procManager.StopProcess(pid); err != nil {
+				fmt.Printf("⚠️  Warning: failed to stop process %d: %v\n", pid, err)
+			} else {
+				stoppedCount++
+			}
+		}
+
+		if stoppedCount == 0 {
+			return fmt.Errorf("failed to stop any existing agent processes")
+		}
+
+		fmt.Printf("✅ Stopped %d existing process(es)\n", stoppedCount)
+		fmt.Println() // Empty line for better readability
+	}
+
+	return nil
+}
+
+// startAgentService starts the agent using systemd if available, or directly if not
+func startAgentService(platformInfo *platform.PlatformInfo, connectivityManager *connectivity.Manager) error {
 	binaryPath := platformInfo.GetFixPanicAgentBinaryPath()
 
 	// Try to use systemd service if available
-	logger.Step(2, "Starting agent service")
+	logger.Step(3, "Starting agent service")
 	if platform.IsSystemdAvailable() {
 		serviceManager := service.NewManager(platformInfo)
 
@@ -105,4 +161,42 @@ func runAgentStart(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Process PID: %d\n", procInfo.PID)
 
 	return nil
+}
+
+// getAllAgentProcessPIDs returns all PIDs of running FixPanic Agent processes
+func getAllAgentProcessPIDs() ([]int, error) {
+	var pids []int
+
+	// Create process manager for the current platform
+	procManager := process.NewProcessManager()
+
+	// Use ps command to find all fixpanic-connectivity-layer processes
+	cmd := exec.Command("ps", "aux")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute ps command: %w", err)
+	}
+
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		// Look for fixpanic-connectivity-layer process (exclude grep itself and this process)
+		if strings.Contains(line, "fixpanic-connectivity-layer") {
+			if strings.Contains(line, "grep") || strings.Contains(line, "ps aux") {
+				continue
+			}
+
+			// Extract PID from ps output
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				if pid, err := strconv.Atoi(fields[1]); err == nil {
+					// Verify the process is actually running using our process manager
+					if procManager.IsProcessRunning(pid) {
+						pids = append(pids, pid)
+					}
+				}
+			}
+		}
+	}
+
+	return pids, nil
 }

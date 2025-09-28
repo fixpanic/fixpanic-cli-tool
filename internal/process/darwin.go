@@ -37,13 +37,33 @@ func (d *DarwinProcessManager) StartProcess(config ProcessConfig) (*ProcessInfo,
 		cmd.Env = append(os.Environ(), config.Env...)
 	}
 
-	// macOS-specific process creation attributes
+	// macOS-specific process creation attributes - simplified approach
 	if config.Detach {
-		// Use Unix-specific session creation for proper detachment
+		// Use simpler attributes that are more compatible with macOS security
 		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Setsid:  true, // Create new session
-			Setpgid: true, // Set process group ID
+			Setpgid: true, // Set process group ID (less restrictive than Setsid)
 		}
+
+		// Redirect stdout and stderr to log files for detached processes
+		logDir := fmt.Sprintf("%s/.local/log/fixpanic", os.Getenv("HOME"))
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			return nil, fmt.Errorf("failed to create log directory: %w", err)
+		}
+
+		// Open log files
+		stdoutFile, err := os.OpenFile(fmt.Sprintf("%s/agent.log", logDir), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open stdout log file: %w", err)
+		}
+
+		stderrFile, err := os.OpenFile(fmt.Sprintf("%s/agent-error.log", logDir), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			stdoutFile.Close()
+			return nil, fmt.Errorf("failed to open stderr log file: %w", err)
+		}
+
+		cmd.Stdout = stdoutFile
+		cmd.Stderr = stderrFile
 	}
 
 	// Start the process
@@ -51,10 +71,8 @@ func (d *DarwinProcessManager) StartProcess(config ProcessConfig) (*ProcessInfo,
 		return nil, fmt.Errorf("failed to start process on macOS: %w", err)
 	}
 
-	// Release the process to allow it to continue running independently
-	if err := cmd.Process.Release(); err != nil {
-		return nil, fmt.Errorf("failed to release process on macOS: %w", err)
-	}
+	// Don't release the process immediately - let it run naturally
+	// This avoids potential issues with macOS process management
 
 	return &ProcessInfo{
 		PID:     cmd.Process.Pid,
