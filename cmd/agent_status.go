@@ -55,13 +55,25 @@ func getAgentProcessInfo() (running bool, pid int, err error) {
 			}
 
 			// Extract PID from ps output
+			// Handle both GNU ps (USER PID ...) and busybox ps (PID USER ...) formats
 			fields := strings.Fields(line)
 			if len(fields) >= 2 {
-				if p, err := strconv.Atoi(fields[1]); err == nil {
-					// Verify the process is actually running using our process manager
-					if procManager.IsProcessRunning(p) {
-						return true, p, nil
+				var pid int
+				var err error
+
+				// Try to parse first field as PID (busybox format: PID USER TIME COMMAND)
+				pid, err = strconv.Atoi(fields[0])
+				if err != nil {
+					// If first field isn't a number, try second field (GNU format: USER PID %CPU ...)
+					pid, err = strconv.Atoi(fields[1])
+					if err != nil {
+						continue
 					}
+				}
+
+				// Verify the process is actually running using our process manager
+				if procManager.IsProcessRunning(pid) {
+					return true, pid, nil
 				}
 			}
 		}
