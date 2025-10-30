@@ -277,11 +277,22 @@ func downloadNewVersion(release *GitHubRelease) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp file: %w", err)
 	}
-	defer tempFile.Close()
 
 	logger.Progress("Saving to temporary file")
 	if _, err := io.Copy(tempFile, resp.Body); err != nil {
+		tempFile.Close()
 		return "", fmt.Errorf("failed to save download: %w", err)
+	}
+
+	// Sync to ensure all data is written to disk
+	if err := tempFile.Sync(); err != nil {
+		tempFile.Close()
+		return "", fmt.Errorf("failed to sync file to disk: %w", err)
+	}
+
+	// Close the file before extraction/chmod
+	if err := tempFile.Close(); err != nil {
+		return "", fmt.Errorf("failed to close file: %w", err)
 	}
 
 	// Extract binary if it's a tar.gz
@@ -340,9 +351,20 @@ func extractBinaryFromTarGz(archivePath, extractDir string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			defer outFile.Close()
 
 			if _, err := io.Copy(outFile, tr); err != nil {
+				outFile.Close()
+				return "", err
+			}
+
+			// Sync to ensure all data is written to disk
+			if err := outFile.Sync(); err != nil {
+				outFile.Close()
+				return "", err
+			}
+
+			// Close the file
+			if err := outFile.Close(); err != nil {
 				return "", err
 			}
 
@@ -378,23 +400,35 @@ func verifyNewBinary(binaryPath string) error {
 
 // replaceBinary safely replaces the current binary with the new one
 func replaceBinary(currentPath, newPath string) error {
-	// Create backup
+	// On Unix systems, we can use os.Rename to atomically replace a running binary
+	// The running process continues with the old inode, but new executions use the new binary
+
+	// Create backup first by copying the current binary
 	backupPath := currentPath + ".backup"
 	logger.Progress("Creating backup: %s", backupPath)
 
 	if err := copyFile(currentPath, backupPath); err != nil {
-		return fmt.Errorf("failed to create backup: %w", err)
+		// Backup creation is not critical on Unix, log warning but continue
+		logger.Warning("Failed to create backup: %v", err)
 	}
 
-	// Replace binary
-	logger.Progress("Replacing binary")
-	if err := copyFile(newPath, currentPath); err != nil {
-		// Try to restore backup
-		logger.Warning("Failed to replace binary, attempting to restore backup")
-		if restoreErr := copyFile(backupPath, currentPath); restoreErr != nil {
-			return fmt.Errorf("failed to replace binary and failed to restore backup: %w (restore error: %v)", err, restoreErr)
+	// Replace binary using atomic rename
+	// This works even when the binary is running because:
+	// - The old process keeps its file descriptor to the old inode
+	// - The new binary gets the same path but a new inode
+	// - Future executions will use the new binary
+	logger.Progress("Replacing binary (atomic rename)")
+
+	if err := os.Rename(newPath, currentPath); err != nil {
+		// If rename fails, try to restore backup
+		if backupPath != "" {
+			logger.Warning("Failed to replace binary, attempting to restore backup")
+			if restoreErr := os.Rename(backupPath, currentPath); restoreErr != nil {
+				return fmt.Errorf("failed to replace binary and failed to restore backup: %w (restore error: %v)", err, restoreErr)
+			}
+			return fmt.Errorf("failed to replace binary (backup restored): %w", err)
 		}
-		return fmt.Errorf("failed to replace binary (backup restored): %w", err)
+		return fmt.Errorf("failed to replace binary: %w", err)
 	}
 
 	// Make sure new binary is executable
@@ -402,11 +436,16 @@ func replaceBinary(currentPath, newPath string) error {
 		logger.Warning("Failed to set executable permissions: %v", err)
 	}
 
-	// Remove backup
-	logger.Progress("Cleaning up backup")
-	if err := os.Remove(backupPath); err != nil {
-		logger.Warning("Failed to remove backup file: %v", err)
+	// Remove backup on success
+	if backupPath != "" {
+		logger.Progress("Cleaning up backup")
+		if err := os.Remove(backupPath); err != nil {
+			logger.Warning("Failed to remove backup file: %v", err)
+		}
 	}
+
+	logger.Info("Binary replaced successfully. Current process will continue with old version.")
+	logger.Info("Next execution of 'fixpanic' will use the new version.")
 
 	return nil
 }
