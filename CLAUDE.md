@@ -63,46 +63,112 @@ make install
 
 ### Project Structure
 - `main.go` - Entry point that sets version info and executes the root command
-- `cmd/` - Cobra CLI commands using the structure:
+- `cmd/` - Cobra CLI commands:
   - `root.go` - Base command with global flags and config initialization
   - `agent.go` - Main agent command group
-  - `agent_*.go` - Specific agent subcommands (install, start, stop, status, logs, etc.)
+  - `agent_*.go` - Specific agent subcommands (install, start, stop, status, logs, validate, upgrade, uninstall, connection, restart)
   - `upgrade.go` - CLI self-upgrade functionality
 - `internal/` - Internal packages:
-  - `config/` - YAML configuration management for agent settings
-  - `connectivity/` - Manages connection to socket.fixpanic.com
-  - `logger/` - Logging utilities
-  - `platform/` - Platform detection and paths
-  - `process/` - Cross-platform process management with platform-specific implementations
-  - `service/` - Service/daemon management (systemd, etc.)
+  - `config/` - YAML configuration management with validation
+  - `connectivity/` - Agent binary download and version management from GitHub Releases
+  - `logger/` - Pretty logging utilities for CLI output
+  - `platform/` - Platform detection, directory paths, and binary URL generation
+  - `process/` - Cross-platform process management with build-constrained implementations
+  - `service/` - Systemd service management (install, start, stop, enable, logs)
 
 ### Key Architectural Patterns
-- **Cross-platform support**: Uses build constraints and platform-specific files in `internal/process/` (darwin.go, unix.go, windows.go)
-- **CLI framework**: Built with Cobra and Viper for command structure and configuration
-- **Process management**: Abstract interface with platform-specific implementations for starting/stopping processes
-- **Configuration**: YAML-based config with system-wide (/etc/fixpanic/) and user-specific (~/.fixpanic/) paths
-- **Agent lifecycle**: Downloads connectivity layer binary, manages systemd services, handles configuration
 
-### Configuration Paths
-- System installation: `/etc/fixpanic/agent.yaml`, `/usr/local/lib/fixpanic/`, `/var/log/fixpanic/`
-- User installation: `~/.config/fixpanic/agent.yaml`, `~/.local/lib/fixpanic/`, `~/.local/log/fixpanic/`
+#### Cross-Platform Support
+- **Build constraints**: Platform-specific files in `internal/process/` use `// +build` tags:
+  - `darwin.go` - macOS-specific process management
+  - `unix.go` - Linux/Unix process management
+  - `windows.go` - Windows process management
+- **ProcessManager interface**: Abstracts platform differences with common API
+- **Platform detection**: Runtime detection of OS/arch with normalized names for binary downloads
+
+#### Installation Modes
+The CLI supports two installation modes based on user privileges:
+
+**Root/System Installation** (requires sudo):
+- Binary: `/usr/local/lib/fixpanic/fixpanic-connectivity-layer`
+- Config: `/etc/fixpanic/agent.yaml`
+- Logs: `/var/log/fixpanic/agent.log`
+- Service: `/etc/systemd/system/fixpanic-connectivity-layer.service`
+
+**User Installation** (non-root, default):
+- Binary: `~/.local/lib/fixpanic/fixpanic-connectivity-layer`
+- Config: `~/.config/fixpanic/agent.yaml`
+- Logs: `~/.local/log/fixpanic/agent.log`
+- No systemd service (manual process management)
+
+#### Agent Binary Management
+- **Download source**: GitHub Releases at `fixpanic/fixpanic-connectivity-layer-release`
+- **URL pattern**: `https://github.com/fixpanic/fixpanic-connectivity-layer-release/releases/latest/download/fixpanic-connectivity-layer-{os}-{arch}`
+- **Version checking**: CLI queries GitHub API for latest release and auto-updates on install
+- **Checksum verification**: SHA256 validation available via `VerifyChecksum()`
+- **macOS quarantine removal**: Automatically runs `xattr -d com.apple.quarantine` to allow execution
 
 ### Build System
 - Uses Go modules with dependencies managed in go.mod
 - Makefile provides comprehensive build targets
-- GitHub Actions workflow handles multi-platform releases
 - Cross-compilation for linux/amd64, linux/arm64, linux/386, linux/arm, darwin/amd64, darwin/arm64, windows/amd64
-- Version information embedded at build time using ldflags
+- Version information embedded at build time using ldflags: `-X main.version -X main.commit -X main.date`
+- Release packages created as tar.gz for Unix/macOS, raw .exe for Windows
 
 ## Dependencies
-- **Core**: Uses Cobra for CLI, Viper for configuration, YAML for config files
+- **Cobra** (`spf13/cobra`) - CLI framework and command structure
+- **Viper** (`spf13/viper`) - Configuration management with environment variable support
+- **gopkg.in/yaml.v3** - YAML parsing for agent config files
 - **Go version**: 1.21+
 - **External tools**: golangci-lint for linting (auto-installed by make lint)
 
 ## Agent Operations
-The CLI manages a "connectivity layer" binary that connects to socket.fixpanic.com:8080 for AI agent communication. Key operations include:
-- Download and install agent binary
-- Configure agent with API key and agent ID
-- Start/stop agent processes
-- Monitor agent status and logs
-- Validate installation and connectivity
+
+The CLI manages the "fixpanic-connectivity-layer" binary (referred to as the "agent"):
+
+### Connection Details
+- **Socket server**: `socket.fixpanic.com:8080` (configurable via `--socket-server` flag)
+- **Protocol**: TCP connection maintained by the agent binary
+- **Configuration**: Agent ID and API key stored in YAML config, passed to agent at startup
+
+### Installation Flow
+1. Detect platform and determine installation paths (root vs user)
+2. Create necessary directories (lib, config, log)
+3. Check for existing installation (skip if found, unless `--force`)
+4. Query GitHub API for latest agent version
+5. Download agent binary from GitHub Releases
+6. Remove macOS quarantine attribute if needed
+7. Create YAML config with agent ID and API key
+8. Install systemd service (if root and systemd available)
+9. Enable and start service
+
+### Command Operations
+- `install` - Full installation with auto-update check
+- `start/stop/restart` - Process/service lifecycle management (systemd or direct process)
+- `status` - Check if agent is running, show PID and service status
+- `logs` - Tail agent logs (from journalctl or log file)
+- `validate` - Verify installation, config, and connectivity
+- `upgrade` - Update agent binary to latest version
+- `uninstall` - Remove agent binary, config, logs, and service
+- `connection` - Test connection to socket server
+
+## Important Implementation Notes
+
+### Deprecated Functions
+Several functions in `internal/platform/platform.go` and `internal/connectivity/manager.go` have deprecation warnings:
+- `GetConnectivityBinaryName()` → Use `GetFixPanicAgentBinaryName()`
+- `GetConnectivityDownloadURL()` → Use `GetFixPanicAgentDownloadURL()`
+- `IsInstalled()` → Use `IsFixPanicAgentInstalled()`
+- When refactoring, migrate to the new function names to avoid warnings
+
+### Configuration Management
+- Config is validated before saving using `AgentConfig.Validate()`
+- Required fields: `agent_id` and `api_key`
+- Config paths resolved via `platform.GetPlatformInfo()` based on user privileges
+- Environment variables can override config via Viper's `AutomaticEnv()`
+
+### Service Management
+- Systemd service runs as the installing user (not always root)
+- Service configured with `Restart=always` and `RestartSec=10`
+- Logs sent to journalctl on systemd systems
+- Non-systemd systems require manual process management

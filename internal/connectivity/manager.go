@@ -58,13 +58,26 @@ func (m *Manager) Download(version string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temporary file: %w", err)
 	}
-	defer out.Close()
 
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
+		out.Close()
 		os.Remove(tmpFile)
 		return fmt.Errorf("failed to save binary: %w", err)
+	}
+
+	// Sync to ensure all data is written to disk before closing
+	if err := out.Sync(); err != nil {
+		out.Close()
+		os.Remove(tmpFile)
+		return fmt.Errorf("failed to sync file to disk: %w", err)
+	}
+
+	// Close the file before chmod and rename
+	if err := out.Close(); err != nil {
+		os.Remove(tmpFile)
+		return fmt.Errorf("failed to close file: %w", err)
 	}
 
 	// Make the binary executable
@@ -165,13 +178,26 @@ func (m *Manager) DownloadFixPanicAgent(version string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temporary file: %w", err)
 	}
-	defer out.Close()
 
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
+		out.Close()
 		os.Remove(tmpFile)
 		return fmt.Errorf("failed to save binary: %w", err)
+	}
+
+	// Sync to ensure all data is written to disk before closing
+	if err := out.Sync(); err != nil {
+		out.Close()
+		os.Remove(tmpFile)
+		return fmt.Errorf("failed to sync file to disk: %w", err)
+	}
+
+	// Close the file before chmod and rename
+	if err := out.Close(); err != nil {
+		os.Remove(tmpFile)
+		return fmt.Errorf("failed to close file: %w", err)
 	}
 
 	// Make the binary executable
