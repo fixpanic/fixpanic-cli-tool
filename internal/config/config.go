@@ -10,13 +10,24 @@ import (
 
 // AgentConfig represents the agent configuration
 type AgentConfig struct {
-	App     AppSection     `yaml:"app"`
-	Logging LoggingSection `yaml:"logging"`
+	App        AppSection        `yaml:"app"`
+	ReqHandler ReqHandlerSection `yaml:"req_handler"`
+	Logging    LoggingSection    `yaml:"logging"`
 }
 
 type AppSection struct {
-	AgentID string `yaml:"agent_id"`
-	APIKey  string `yaml:"api_key"`
+	AgentID                string `yaml:"agent_id"`
+	APIKey                 string `yaml:"api_key"`
+	TLSEnabled             bool   `yaml:"tls_enabled"`
+	TLSInsecureSkipVerify  bool   `yaml:"tls_insecure_skip_verify"`
+}
+
+type ReqHandlerSection struct {
+	MaxConcurrentConnections int    `yaml:"max_concurrent_connections"`
+	ConnectionTimeout        string `yaml:"connection_timeout"`
+	DefaultToolTimeout       int    `yaml:"default_tool_timeout"`
+	TLSEnabled               bool   `yaml:"tls_enabled"`
+	TLSInsecureSkipVerify    bool   `yaml:"tls_insecure_skip_verify"`
 }
 
 type LoggingSection struct {
@@ -24,10 +35,20 @@ type LoggingSection struct {
 	File  string `yaml:"file"`
 }
 
-// DefaultConfig returns a default configuration
+// DefaultConfig returns a default configuration with TLS enabled
 func DefaultConfig() *AgentConfig {
 	return &AgentConfig{
-		App: AppSection{},
+		App: AppSection{
+			TLSEnabled:            true,  // Enable TLS by default for security
+			TLSInsecureSkipVerify: false, // Require valid certificates
+		},
+		ReqHandler: ReqHandlerSection{
+			MaxConcurrentConnections: 10,
+			ConnectionTimeout:        "60s",
+			DefaultToolTimeout:       300,
+			TLSEnabled:               true,  // Enable TLS by default for security
+			TLSInsecureSkipVerify:    false, // Require valid certificates
+		},
 		Logging: LoggingSection{
 			Level: "info",
 			File:  "/var/log/fixpanic/agent.log",
