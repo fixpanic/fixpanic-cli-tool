@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/fixpanic/fixpanic-cli/internal/platform"
 )
 
 // DarwinProcessManager handles process management on macOS
@@ -217,6 +219,11 @@ func (d *DarwinServiceManager) getPlistPath() string {
 
 // generatePlistContent generates the launchd plist content
 func (d *DarwinServiceManager) generatePlistContent(binaryPath, configPath string) string {
+	logDir := "/tmp" // Fallback
+	if info, err := platform.GetPlatformInfo(); err == nil {
+		logDir = info.LogDir
+	}
+
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -234,11 +241,11 @@ func (d *DarwinServiceManager) generatePlistContent(binaryPath, configPath strin
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/tmp/fixpanic-agent.log</string>
+    <string>%s/agent.log</string>
     <key>StandardErrorPath</key>
-    <string>/tmp/fixpanic-agent-error.log</string>
+    <string>%s/agent-error.log</string>
 </dict>
-</plist>`, d.serviceName, binaryPath, configPath)
+</plist>`, d.serviceName, binaryPath, configPath, logDir, logDir)
 }
 
 // Darwin-specific helper functions

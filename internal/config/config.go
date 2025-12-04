@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/fixpanic/fixpanic-cli/internal/platform"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,10 +17,10 @@ type AgentConfig struct {
 }
 
 type AppSection struct {
-	AgentID                string `yaml:"agent_id"`
-	APIKey                 string `yaml:"api_key"`
-	TLSEnabled             bool   `yaml:"tls_enabled"`
-	TLSInsecureSkipVerify  bool   `yaml:"tls_insecure_skip_verify"`
+	AgentID               string `yaml:"agent_id"`
+	APIKey                string `yaml:"api_key"`
+	TLSEnabled            bool   `yaml:"tls_enabled"`
+	TLSInsecureSkipVerify bool   `yaml:"tls_insecure_skip_verify"`
 }
 
 type ReqHandlerSection struct {
@@ -35,25 +36,41 @@ type LoggingSection struct {
 	File  string `yaml:"file"`
 }
 
+type DefaultConfigOptions struct {
+	TLSEnabled bool
+	AgentID    string
+	APIKey     string
+}
+
 // DefaultConfig returns a default configuration with TLS enabled
-func DefaultConfig() *AgentConfig {
+func DefaultConfig(options DefaultConfigOptions) *AgentConfig {
 	return &AgentConfig{
 		App: AppSection{
-			TLSEnabled:            true,  // Enable TLS by default for security
-			TLSInsecureSkipVerify: false, // Require valid certificates
+			TLSEnabled:            options.TLSEnabled, // Enable TLS by default for security
+			TLSInsecureSkipVerify: false,              // Require valid certificates
+			AgentID:               options.AgentID,
+			APIKey:                options.APIKey,
 		},
 		ReqHandler: ReqHandlerSection{
 			MaxConcurrentConnections: 10,
 			ConnectionTimeout:        "60s",
 			DefaultToolTimeout:       300,
-			TLSEnabled:               true,  // Enable TLS by default for security
-			TLSInsecureSkipVerify:    false, // Require valid certificates
+			TLSEnabled:               options.TLSEnabled, // Enable TLS by default for security
+			TLSInsecureSkipVerify:    false,              // Require valid certificates
 		},
 		Logging: LoggingSection{
 			Level: "info",
-			File:  "/var/log/fixpanic/agent.log",
+			File:  getLogPath(),
 		},
 	}
+}
+
+func getLogPath() string {
+	info, err := platform.GetPlatformInfo()
+	if err != nil {
+		return "/var/log/fixpanic/agent.log" // Fallback
+	}
+	return filepath.Join(info.LogDir, "agent.log")
 }
 
 // LoadConfig loads configuration from file

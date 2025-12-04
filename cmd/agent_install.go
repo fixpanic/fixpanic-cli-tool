@@ -85,9 +85,12 @@ func runAgentInstall(cmd *cobra.Command, args []string) error {
 
 	// Create configuration
 	logger.Step(4, "Creating agent configuration")
-	agentConfig := config.DefaultConfig()
-	agentConfig.App.AgentID = agentID
-	agentConfig.App.APIKey = agentAPIKey
+	// default config with TLS enabled
+	agentConfig := config.DefaultConfig(config.DefaultConfigOptions{
+		TLSEnabled: true, // TLS Enable by default for security
+		AgentID:    agentID,
+		APIKey:     agentAPIKey,
+	})
 
 	// Validate configuration
 	logger.Progress("Validating configuration")
