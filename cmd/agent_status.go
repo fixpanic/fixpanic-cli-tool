@@ -138,11 +138,12 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 
 	// Check configuration
 	configPath := platformInfo.GetConfigPath()
+	logger.KeyValue("Configuration file", configPath)
+
 	agentConfig, err := config.LoadConfig(configPath)
 	if err != nil {
 		logger.Warning("Could not load configuration: %v", err)
 	} else {
-		logger.KeyValue("Configuration file", configPath)
 		logger.KeyValue("Agent ID", agentConfig.App.AgentID)
 		logger.KeyValue("Log level", agentConfig.Logging.Level)
 	}
