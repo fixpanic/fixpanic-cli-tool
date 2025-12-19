@@ -34,22 +34,51 @@ func (u *UnixProcessManager) StartProcess(config ProcessConfig) (*ProcessInfo, e
 	}
 
 	if len(config.Env) > 0 {
-		cmd.Env = append(os.Environ(), config.Env...)
-	}
+	var cmd *exec.Cmd
+	var err error
 
-	// Unix-specific process creation attributes
-	if config.Detach {
-		// Create new session and process group for proper detachment
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Setsid:  true, // Create new session
-			Setpgid: true, // Set process group ID
+	// Helper function to create and configure the command
+	createCmd := func(withSysProcAttr bool) *exec.Cmd {
+		c := exec.Command(config.BinaryPath, config.Args...)
+		if config.WorkingDir != "" {
+			c.Dir = config.WorkingDir
 		}
+		if len(config.Env) > 0 {
+			c.Env = append(os.Environ(), config.Env...)
+		}
+		if withSysProcAttr && config.Detach {
+			// Create new session and process group for proper detachment
+			c.SysProcAttr = &syscall.SysProcAttr{
+				Setsid:  true, // Create new session
+				Setpgid: true, // Set process group ID
+			}
+		}
+		return c
 	}
 
-	// Start the process
-	if err := cmd.Start(); err != nil {
+	// Attempt to start with SysProcAttr if detachment is requested
+	cmd = createCmd(true)
+	err = cmd.Start()
+
+	// If startup fails with permission error (common in Docker/containers) and detach was requested,
+	// try again without setsid/setpgid.
+	if err != nil && config.Detach && (strings.Contains(err.Error(), "operation not permitted") || strings.Contains(err.Error(), "permission denied")) {
+		// Log or print a warning here if desired, indicating a fallback
+		// fmt.Printf("Warning: Failed to start process with SysProcAttr (%v), retrying without it.\n", err)
+
+		// Create a new command since the old one might be in a bad state
+		cmd = createCmd(false) // No SysProcAttr for fallback
+		err = cmd.Start()
+		if err != nil {
+			return nil, fmt.Errorf("failed to start process on Unix (fallback attempt): %w", err)
+		}
+	} else if err != nil {
+		// Original error if not a permission issue or detach was not requested
 		return nil, fmt.Errorf("failed to start process on Unix: %w", err)
 	}
+
+	// Capture PID before release
+	pid := cmd.Process.Pid
 
 	// Release the process to allow it to continue running independently
 	if err := cmd.Process.Release(); err != nil {
@@ -57,7 +86,7 @@ func (u *UnixProcessManager) StartProcess(config ProcessConfig) (*ProcessInfo, e
 	}
 
 	return &ProcessInfo{
-		PID:     cmd.Process.Pid,
+		PID:     pid,
 		Running: true,
 		Error:   nil,
 	}, nil

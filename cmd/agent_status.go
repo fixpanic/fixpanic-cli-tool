@@ -149,49 +149,66 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check service status or process status
+	var isRunning bool
+	var serviceStatus string
+	var mode string = "None"
+	var pid int
+
+	// 1. Check Systemd (if available)
 	if platform.IsSystemdAvailable() {
 		serviceManager := service.NewManager(platformInfo)
 
-		// Check if service is enabled
-		enabled, err := serviceManager.IsEnabled()
-		if err != nil {
-			fmt.Printf("⚠️  Could not check if service is enabled: %v\n", err)
-		} else if enabled {
-			fmt.Println("✅ Service is enabled for auto-start")
-		} else {
-			fmt.Println("⚠️  Service is not enabled for auto-start")
-		}
+		// Check enabled status
+		if serviceManager.IsUsable() {
+			enabled, err := serviceManager.IsEnabled()
+			if err == nil && enabled {
+				fmt.Println("✅ Service is enabled for auto-start")
+			} else {
+				fmt.Println("ℹ️  Service is not enabled for auto-start")
+			}
 
-		// Check service status
-		status, err := serviceManager.Status()
-		if err != nil {
-			fmt.Printf("⚠️  Could not get service status: %v\n", err)
-		} else {
-			switch status {
-			case "active":
-				fmt.Println("✅ Service is running")
-				// Try to get PID from systemctl
-				if pid := getServicePID(); pid > 0 {
-					fmt.Printf("🆔 Process ID: %d\n", pid)
+			// Check status
+			s, err := serviceManager.Status()
+			if err == nil {
+				serviceStatus = s
+				if s == "active" {
+					isRunning = true
+					mode = "Systemd Service"
+					// Try to get PID
+					pid = getServicePID()
 				}
-			case "inactive":
-				fmt.Println("❌ Service is not running")
-			default:
-				fmt.Printf("⚠️  Service status: %s\n", status)
 			}
 		}
-	} else {
-		// Systemd not available, check if process is running directly using cross-platform process management
-		fmt.Println("ℹ️  Systemd not available - checking process status directly")
-		// Try to find the agent process by checking if any process with "fixpanic-connectivity-layer" is running
-		// This is a more robust approach than the previous ps aux method
-		running, pid, err := getAgentProcessInfo()
+	}
+
+	// 2. If not running via Systemd, check direct process (Fallback/Legacy)
+	if !isRunning {
+		// Systemd not active or not available, check direct process
+		var err error
+		isRunning, pid, err = getAgentProcessInfo()
 		if err != nil {
 			fmt.Printf("⚠️  Could not check process status: %v\n", err)
-		} else if running {
-			fmt.Printf("✅ Agent is running (PID: %d)\n", pid)
-		} else {
-			fmt.Println("❌ Agent is not running")
+		} else if isRunning {
+			mode = "Background Process"
+		}
+	}
+
+	// Report Status
+	if isRunning {
+		logger.Success("Agent is RUNNING")
+		logger.KeyValue("Mode", mode)
+		if pid > 0 {
+			logger.KeyValue("PID", fmt.Sprintf("%d", pid))
+		}
+		if serviceStatus != "" && mode != "Systemd Service" {
+			// Inform user that systemd thinks it's stopped, but process is running
+			fmt.Printf("ℹ️  Note: Systemd service status is '%s', but agent is running as a background process.\n", serviceStatus)
+		}
+	} else {
+		// Not running
+		fmt.Println("❌ Agent is STOPPED")
+		if serviceStatus != "" {
+			fmt.Printf("   Service status: %s\n", serviceStatus)
 		}
 	}
 

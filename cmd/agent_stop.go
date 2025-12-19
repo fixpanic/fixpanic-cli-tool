@@ -3,7 +3,10 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/fixpanic/fixpanic-cli/internal/logger"
+	"github.com/fixpanic/fixpanic-cli/internal/platform"
 	"github.com/fixpanic/fixpanic-cli/internal/process"
+	"github.com/fixpanic/fixpanic-cli/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -12,40 +15,65 @@ var agentStopCmd = &cobra.Command{
 	Short: "Stop the FixPanic Agent",
 	Long:  `Stop the FixPanic Agent service that is running in the background.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Get all running agent processes
-		pids, err := getAllAgentProcessPIDs()
+		logger.Header("Stopping FixPanic Agent")
+
+		platformInfo, err := platform.GetPlatformInfo()
 		if err != nil {
-			return fmt.Errorf("failed to check agent status: %w", err)
+			return fmt.Errorf("failed to get platform info: %w", err)
 		}
 
-		if len(pids) == 0 {
-			fmt.Println("FixPanic Agent is not running")
-			return nil
-		}
+		stoppedSomething := false
 
-		// Create process manager for the current platform
-		procManager := process.NewProcessManager()
-
-		// Stop all agent processes
-		stoppedCount := 0
-		for _, pid := range pids {
-			fmt.Printf("Stopping FixPanic Agent (PID: %d)...\n", pid)
-			if err := procManager.StopProcess(pid); err != nil {
-				fmt.Printf("Warning: failed to stop process %d: %v\n", pid, err)
-			} else {
-				stoppedCount++
+		// 1. Try systemd stop if available and usable
+		if platform.IsSystemdAvailable() {
+			serviceManager := service.NewManager(platformInfo)
+			if serviceManager.IsUsable() {
+				status, _ := serviceManager.Status()
+				if status == "active" || status == "activating" {
+					logger.Step(1, "Stopping systemd service")
+					if err := serviceManager.Stop(); err != nil {
+						fmt.Printf("Warning: failed to stop service: %v\n", err)
+					} else {
+						fmt.Println("✅ Service stopped successfully")
+						stoppedSomething = true
+					}
+				}
 			}
 		}
 
-		if stoppedCount == 0 {
-			return fmt.Errorf("failed to stop any agent processes")
+		// 2. Always check for direct processes (cleanup/fallback)
+		logger.Step(2, "Checking for background processes")
+		pids, err := getAllAgentProcessPIDs()
+		if err != nil {
+			return fmt.Errorf("failed to check agent processes: %w", err)
 		}
 
-		if stoppedCount == 1 {
-			fmt.Println("FixPanic Agent stopped successfully")
+		if len(pids) > 0 {
+			fmt.Printf("Found %d running process(es)\n", len(pids))
+			procManager := process.NewProcessManager()
+			stoppedCount := 0
+			for _, pid := range pids {
+				fmt.Printf("Stopping PID: %d... ", pid)
+				if err := procManager.StopProcess(pid); err != nil {
+					fmt.Printf("Failed: %v\n", err)
+				} else {
+					fmt.Println("Done")
+					stoppedCount++
+				}
+			}
+			if stoppedCount > 0 {
+				stoppedSomething = true
+			}
 		} else {
-			fmt.Printf("FixPanic Agent stopped successfully (%d processes stopped)\n", stoppedCount)
+			fmt.Println("No background processes found")
 		}
+
+		if !stoppedSomething {
+			fmt.Println("\n⚠️  FixPanic Agent is not running (checked service and background processes)")
+		} else {
+			logger.Success("Agent stopped")
+		}
+
 		return nil
 	},
 }

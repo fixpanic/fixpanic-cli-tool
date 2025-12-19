@@ -40,6 +40,13 @@ func runAgentStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get platform info: %w", err)
 	}
 
+	// Check environment and attempt auto-configuration
+	if warnings := platformInfo.AutoConfigureEnvironment(); len(warnings) > 0 {
+		for _, warning := range warnings {
+			fmt.Printf("⚠️  Warning: %s\n", warning)
+		}
+	}
+
 	// Validate agent installation
 	connectivityManager, err := validateAgentInstall(platformInfo)
 	if err != nil {
@@ -108,10 +115,20 @@ func cleanUpOldAgents() error {
 // startAgentService starts the agent using systemd if available, or directly if not
 func startAgentService(platformInfo *platform.PlatformInfo, connectivityManager *connectivity.Manager) error {
 	binaryPath := platformInfo.GetFixPanicAgentBinaryPath()
+	useSystemd := false
 
-	// Try to use systemd service if available
-	logger.Step(3, "Starting agent service")
+	// Try to use systemd service if available AND usable
 	if platform.IsSystemdAvailable() {
+		serviceManager := service.NewManager(platformInfo)
+		if serviceManager.IsUsable() {
+			useSystemd = true
+		} else {
+			logger.Warning("Systemd is available but not usable (missing privileges or socket). Falling back to direct process execution.")
+		}
+	}
+
+	if useSystemd {
+		logger.Step(3, "Starting agent service")
 		serviceManager := service.NewManager(platformInfo)
 
 		// Check current status
@@ -140,6 +157,7 @@ func startAgentService(platformInfo *platform.PlatformInfo, connectivityManager 
 	}
 
 	// Use cross-platform process manager for direct process execution
+	logger.Step(3, "Starting agent process (background)")
 	configPath := platformInfo.GetConfigPath()
 
 	fmt.Printf("Starting: %s --config %s\n", binaryPath, configPath)

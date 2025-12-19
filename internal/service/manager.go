@@ -99,8 +99,9 @@ func (m *Manager) Start() error {
 
 	args := append(m.platform.GetSystemdCommandFlags(), "start", platform.GetSystemdServiceName())
 	cmd := exec.Command("systemctl", args...)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to start service: %w", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to start service (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
 
 	fmt.Printf("Service started: %s\n", platform.GetSystemdServiceName())
@@ -115,8 +116,9 @@ func (m *Manager) Stop() error {
 
 	args := append(m.platform.GetSystemdCommandFlags(), "stop", platform.GetSystemdServiceName())
 	cmd := exec.Command("systemctl", args...)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to stop service: %w", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to stop service (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
 
 	fmt.Printf("Service stopped: %s\n", platform.GetSystemdServiceName())
@@ -149,6 +151,7 @@ func (m *Manager) IsEnabled() (bool, error) {
 
 	args := append(m.platform.GetSystemdCommandFlags(), "is-enabled", platform.GetSystemdServiceName())
 	cmd := exec.Command("systemctl", args...)
+	// Here we just want boolean, output doesn't matter much unless we want to debug IsEnabled failures specifically
 	if err := cmd.Run(); err != nil {
 		return false, nil // Service is not enabled
 	}
@@ -164,8 +167,9 @@ func (m *Manager) Enable() error {
 
 	args := append(m.platform.GetSystemdCommandFlags(), "enable", platform.GetSystemdServiceName())
 	cmd := exec.Command("systemctl", args...)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to enable service: %w", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to enable service (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
 
 	fmt.Printf("Service enabled for auto-start: %s\n", platform.GetSystemdServiceName())
@@ -180,8 +184,9 @@ func (m *Manager) Disable() error {
 
 	args := append(m.platform.GetSystemdCommandFlags(), "disable", platform.GetSystemdServiceName())
 	cmd := exec.Command("systemctl", args...)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to disable service: %w", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to disable service (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
 
 	fmt.Printf("Service disabled from auto-start: %s\n", platform.GetSystemdServiceName())
@@ -242,12 +247,28 @@ WantedBy={{ .WantedBy }}
 	return result.String(), nil
 }
 
+// IsUsable checks if systemd is actually usable (can connect to bus)
+func (m *Manager) IsUsable() bool {
+	if !platform.IsSystemdAvailable() {
+		return false
+	}
+
+	// Try to list units (lightweight check) to see if we can connect to the bus
+	args := append(m.platform.GetSystemdCommandFlags(), "list-units", "--no-pager", "-n", "0")
+	cmd := exec.Command("systemctl", args...)
+	if err := cmd.Run(); err != nil {
+		return false
+	}
+	return true
+}
+
 // reloadSystemd reloads the systemd daemon
 func (m *Manager) reloadSystemd() error {
 	args := append(m.platform.GetSystemdCommandFlags(), "daemon-reload")
 	cmd := exec.Command("systemctl", args...)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to reload systemd daemon: %w", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to reload systemd daemon (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
 	return nil
 }
@@ -260,11 +281,6 @@ func (m *Manager) GetServiceLogs(lines int) (string, error) {
 
 	// journalctl command structure might need to be adjusted: journalctl --user ...
 
-	// journalctl command structure might need to be adjusted: journalctl --user ...
-	// but systemctl --user and journalctl --user are consistent
-	// Correction: "systemctl --user" is a command. "journalctl" is a command.
-	// It should be: journalctl --user -u service ...
-
 	var args []string
 	if !m.platform.IsRoot {
 		args = append(args, "--user")
@@ -272,9 +288,9 @@ func (m *Manager) GetServiceLogs(lines int) (string, error) {
 	args = append(args, "-u", platform.GetSystemdServiceName(), "-n", fmt.Sprintf("%d", lines), "--no-pager")
 
 	cmd := exec.Command("journalctl", args...)
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput() // Capture stderr too just in case
 	if err != nil {
-		return "", fmt.Errorf("failed to get service logs: %w", err)
+		return "", fmt.Errorf("failed to get service logs (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
 
 	return string(output), nil

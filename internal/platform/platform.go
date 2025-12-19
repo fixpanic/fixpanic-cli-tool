@@ -206,6 +206,30 @@ func (p *PlatformInfo) GetSystemdCommandFlags() []string {
 	return []string{"--user"}
 }
 
+// AutoConfigureEnvironment attempts to fix common environment issues and returns warnings if they cannot be fixed
+func (p *PlatformInfo) AutoConfigureEnvironment() []string {
+	var warnings []string
+
+	// Check if XDG_RUNTIME_DIR is set for user mode systemd
+	if !p.IsRoot && runtime.GOOS == "linux" && IsSystemdAvailable() {
+		if os.Getenv("XDG_RUNTIME_DIR") == "" {
+			uid := os.Getuid()
+			// Try to find the runtime directory
+			potentialPath := fmt.Sprintf("/run/user/%d", uid)
+			if _, err := os.Stat(potentialPath); err == nil {
+				// Found it! Set the environment variable for this process
+				os.Setenv("XDG_RUNTIME_DIR", potentialPath)
+				// No warning needed, we fixed it transparently
+			} else {
+				// Could not find it, return warning
+				warnings = append(warnings, fmt.Sprintf("XDG_RUNTIME_DIR is not set and could not be auto-detected. This is required for user-mode systemd.\n   Try running: export XDG_RUNTIME_DIR=%s", potentialPath))
+			}
+		}
+	}
+
+	return warnings
+}
+
 // NormalizeArch normalizes architecture names for consistency
 func NormalizeArch(arch string) string {
 	arch = strings.ToLower(arch)
