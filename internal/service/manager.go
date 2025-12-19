@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/user"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -35,6 +35,12 @@ func (m *Manager) Install() error {
 	}
 
 	servicePath := m.platform.GetServiceFilePath()
+	serviceDir := filepath.Dir(servicePath)
+
+	// Create service directory if it doesn't exist (important for user mode: ~/.config/systemd/user)
+	if err := os.MkdirAll(serviceDir, 0755); err != nil {
+		return fmt.Errorf("failed to create systemd service directory: %w", err)
+	}
 
 	// Create systemd service file
 	if err := os.WriteFile(servicePath, []byte(serviceContent), 0644); err != nil {
@@ -46,7 +52,11 @@ func (m *Manager) Install() error {
 		return fmt.Errorf("failed to reload systemd: %w", err)
 	}
 
-	fmt.Printf("Systemd service installed: %s\n", platform.GetSystemdServiceName())
+	mode := "User"
+	if m.platform.IsRoot {
+		mode = "System"
+	}
+	fmt.Printf("%s systemd service installed: %s\n", mode, platform.GetSystemdServiceName())
 	return nil
 }
 
@@ -87,7 +97,8 @@ func (m *Manager) Start() error {
 		return fmt.Errorf("systemd is not available on this system")
 	}
 
-	cmd := exec.Command("systemctl", "start", platform.GetSystemdServiceName())
+	args := append(m.platform.GetSystemdCommandFlags(), "start", platform.GetSystemdServiceName())
+	cmd := exec.Command("systemctl", args...)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to start service: %w", err)
 	}
@@ -102,7 +113,8 @@ func (m *Manager) Stop() error {
 		return fmt.Errorf("systemd is not available on this system")
 	}
 
-	cmd := exec.Command("systemctl", "stop", platform.GetSystemdServiceName())
+	args := append(m.platform.GetSystemdCommandFlags(), "stop", platform.GetSystemdServiceName())
+	cmd := exec.Command("systemctl", args...)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to stop service: %w", err)
 	}
@@ -117,7 +129,8 @@ func (m *Manager) Status() (string, error) {
 		return "systemd not available", nil
 	}
 
-	cmd := exec.Command("systemctl", "is-active", platform.GetSystemdServiceName())
+	args := append(m.platform.GetSystemdCommandFlags(), "is-active", platform.GetSystemdServiceName())
+	cmd := exec.Command("systemctl", args...)
 	output, err := cmd.Output()
 	if err != nil {
 		// Service is not active
@@ -134,7 +147,8 @@ func (m *Manager) IsEnabled() (bool, error) {
 		return false, nil
 	}
 
-	cmd := exec.Command("systemctl", "is-enabled", platform.GetSystemdServiceName())
+	args := append(m.platform.GetSystemdCommandFlags(), "is-enabled", platform.GetSystemdServiceName())
+	cmd := exec.Command("systemctl", args...)
 	if err := cmd.Run(); err != nil {
 		return false, nil // Service is not enabled
 	}
@@ -148,7 +162,8 @@ func (m *Manager) Enable() error {
 		return fmt.Errorf("systemd is not available on this system")
 	}
 
-	cmd := exec.Command("systemctl", "enable", platform.GetSystemdServiceName())
+	args := append(m.platform.GetSystemdCommandFlags(), "enable", platform.GetSystemdServiceName())
+	cmd := exec.Command("systemctl", args...)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to enable service: %w", err)
 	}
@@ -163,7 +178,8 @@ func (m *Manager) Disable() error {
 		return fmt.Errorf("systemd is not available on this system")
 	}
 
-	cmd := exec.Command("systemctl", "disable", platform.GetSystemdServiceName())
+	args := append(m.platform.GetSystemdCommandFlags(), "disable", platform.GetSystemdServiceName())
+	cmd := exec.Command("systemctl", args...)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to disable service: %w", err)
 	}
@@ -183,7 +199,7 @@ After=network.target
 
 [Service]
 Type=simple
-User={{ .User }}
+{{ if .IsRoot }}User=root{{ end }}
 ExecStart={{ .BinaryPath }} --config {{ .ConfigPath }}
 Restart=always
 RestartSec=10
@@ -191,27 +207,26 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy={{ .WantedBy }}
 `
 
-	currentUser, err := user.Current()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current user: %w", err)
-	}
-
-	user := currentUser.Username
+	var wantedBy string
 	if m.platform.IsRoot {
-		user = "root"
+		wantedBy = "multi-user.target"
+	} else {
+		wantedBy = "default.target"
 	}
 
 	data := struct {
-		User       string
+		IsRoot     bool
 		BinaryPath string
 		ConfigPath string
+		WantedBy   string
 	}{
-		User:       user,
+		IsRoot:     m.platform.IsRoot,
 		BinaryPath: binaryPath,
 		ConfigPath: configPath,
+		WantedBy:   wantedBy,
 	}
 
 	t, err := template.New("service").Parse(tmpl)
@@ -229,7 +244,8 @@ WantedBy=multi-user.target
 
 // reloadSystemd reloads the systemd daemon
 func (m *Manager) reloadSystemd() error {
-	cmd := exec.Command("systemctl", "daemon-reload")
+	args := append(m.platform.GetSystemdCommandFlags(), "daemon-reload")
+	cmd := exec.Command("systemctl", args...)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to reload systemd daemon: %w", err)
 	}
@@ -242,8 +258,20 @@ func (m *Manager) GetServiceLogs(lines int) (string, error) {
 		return "", fmt.Errorf("systemd is not available on this system")
 	}
 
-	args := []string{"journalctl", "-u", platform.GetSystemdServiceName(), "-n", fmt.Sprintf("%d", lines), "--no-pager"}
-	cmd := exec.Command(args[0], args[1:]...)
+	// journalctl command structure might need to be adjusted: journalctl --user ...
+
+	// journalctl command structure might need to be adjusted: journalctl --user ...
+	// but systemctl --user and journalctl --user are consistent
+	// Correction: "systemctl --user" is a command. "journalctl" is a command.
+	// It should be: journalctl --user -u service ...
+
+	var args []string
+	if !m.platform.IsRoot {
+		args = append(args, "--user")
+	}
+	args = append(args, "-u", platform.GetSystemdServiceName(), "-n", fmt.Sprintf("%d", lines), "--no-pager")
+
+	cmd := exec.Command("journalctl", args...)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get service logs: %w", err)

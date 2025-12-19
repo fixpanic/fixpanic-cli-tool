@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -17,18 +18,20 @@ type PlatformInfo struct {
 	BinDir    string
 	ConfigDir string
 	LogDir    string
+	HomeDir   string
 	IsRoot    bool
 }
 
 // GetPlatformInfo returns platform-specific information
 func GetPlatformInfo() (*PlatformInfo, error) {
-	os := runtime.GOOS
+	osType := runtime.GOOS
 	arch := runtime.GOARCH
 	currentUser, err := user.Current()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
 	isRoot := currentUser.Uid == "0"
+	home := currentUser.HomeDir
 
 	var libDir, binDir, configDir, logDir string
 
@@ -38,7 +41,6 @@ func GetPlatformInfo() (*PlatformInfo, error) {
 		configDir = "/etc/fixpanic"
 		logDir = "/var/log/fixpanic"
 	} else {
-		home := currentUser.HomeDir
 		libDir = fmt.Sprintf("%s/.local/lib/fixpanic", home)
 		binDir = fmt.Sprintf("%s/.local/bin", home)
 		configDir = fmt.Sprintf("%s/.config/fixpanic", home)
@@ -46,12 +48,13 @@ func GetPlatformInfo() (*PlatformInfo, error) {
 	}
 
 	return &PlatformInfo{
-		OS:        os,
+		OS:        osType,
 		Arch:      arch,
 		LibDir:    libDir,
 		BinDir:    binDir,
 		ConfigDir: configDir,
 		LogDir:    logDir,
+		HomeDir:   home,
 		IsRoot:    isRoot,
 	}, nil
 }
@@ -188,7 +191,19 @@ func (p *PlatformInfo) GetConfigPath() string {
 
 // GetServiceFilePath returns the full path to the systemd service file
 func (p *PlatformInfo) GetServiceFilePath() string {
-	return fmt.Sprintf("/etc/systemd/system/%s", GetSystemdServiceName())
+	if p.IsRoot {
+		return fmt.Sprintf("/etc/systemd/system/%s", GetSystemdServiceName())
+	}
+	// For user mode systemd, the standard path is ~/.config/systemd/user/
+	return filepath.Join(p.HomeDir, ".config", "systemd", "user", GetSystemdServiceName())
+}
+
+// GetSystemdCommandFlags returns flags for systemctl commands based on permissions
+func (p *PlatformInfo) GetSystemdCommandFlags() []string {
+	if p.IsRoot {
+		return []string{}
+	}
+	return []string{"--user"}
 }
 
 // NormalizeArch normalizes architecture names for consistency
