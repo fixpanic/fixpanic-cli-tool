@@ -138,13 +138,13 @@ func NewWindowsServiceManager(serviceName string) *WindowsServiceManager {
 	}
 }
 
-// InstallService installs the agent as a Windows service
+// InstallService installs the node as a Windows service
 func (w *WindowsServiceManager) InstallService(binaryPath, configPath string) error {
 	// Use sc.exe to create the service
 	cmd := exec.Command("sc.exe", "create", w.serviceName,
 		fmt.Sprintf("binPath=%s --config %s", binaryPath, configPath),
 		"start=auto",
-		"displayname=FixPanic Agent")
+		"displayname=OpsSquad Node")
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create Windows service: %w", err)

@@ -5,30 +5,30 @@ import (
 	"net"
 	"time"
 
-	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/connectivity"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
 	"github.com/spf13/cobra"
 )
 
-// agentConnectionCmd represents the agent test-connection command
-var agentConnectionCmd = &cobra.Command{
+// nodeConnectionCmd represents the node test-connection command
+var nodeConnectionCmd = &cobra.Command{
 	Use:   "test-connection",
-	Short: "Test connection to Fixpanic infrastructure",
-	Long: `Test the connection to the Fixpanic socket server.
+	Short: "Test connection to OpsSquad infrastructure",
+	Long: `Test the connection to the OpsSquad socket server.
 	
-This command verifies that your agent can connect to the Fixpanic infrastructure
+This command verifies that your node can connect to the OpsSquad infrastructure
 and that the network connectivity is working properly.`,
 	Example: `  # Test connection
-  fixpanic agent test-connection`,
-	RunE: runAgentConnection,
+  opssquad node test-connection`,
+	RunE: runNodeConnection,
 }
 
 func init() {
-	agentCmd.AddCommand(agentConnectionCmd)
+	nodeCmd.AddCommand(nodeConnectionCmd)
 }
 
-func runAgentConnection(cmd *cobra.Command, args []string) error {
-	fmt.Println("Testing connection to Fixpanic infrastructure...")
+func runNodeConnection(cmd *cobra.Command, args []string) error {
+	fmt.Println("Testing connection to OpsSquad infrastructure...")
 
 	// Get platform information
 	platformInfo, err := platform.GetPlatformInfo()
@@ -38,12 +38,12 @@ func runAgentConnection(cmd *cobra.Command, args []string) error {
 
 	// Check if connectivity layer is installed
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsFixPanicAgentInstalled() {
-		return fmt.Errorf("agent is not installed. Run 'fixpanic agent install' first")
+	if !connectivityManager.IsOpsSquadNodeInstalled() {
+		return fmt.Errorf("node is not installed. Run 'opssquad node install' first")
 	}
 
-	// Test socket server connection (same as agent uses)
-	socketServer := "socket.fixpanic.com:9000"
+	// Test socket server connection (same as node uses)
+	socketServer := "socket.opssquad.com:9000"
 
 	fmt.Printf("Testing connection to: %s\n", socketServer)
 
@@ -94,7 +94,7 @@ func runAgentConnection(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("\n✅ Connection test completed successfully!")
-	fmt.Println("Your agent should be able to connect to the Fixpanic infrastructure.")
+	fmt.Println("Your node should be able to connect to the OpsSquad infrastructure.")
 
 	// Additional checks
 	fmt.Println("\nAdditional checks:")

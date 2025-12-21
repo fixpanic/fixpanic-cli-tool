@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
 )
 
 // Manager handles systemd service operations
@@ -199,7 +199,7 @@ func (m *Manager) generateServiceFile() (string, error) {
 	configPath := m.platform.GetConfigPath()
 
 	tmpl := `[Unit]
-Description=Fixpanic Agent
+Description=OpsSquad Node
 After=network.target
 
 [Service]

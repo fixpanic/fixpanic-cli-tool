@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
 )
 
 // DarwinProcessManager handles process management on macOS
@@ -47,18 +47,18 @@ func (d *DarwinProcessManager) StartProcess(config ProcessConfig) (*ProcessInfo,
 		}
 
 		// Redirect stdout and stderr to log files for detached processes
-		logDir := fmt.Sprintf("%s/.local/log/fixpanic", os.Getenv("HOME"))
+		logDir := fmt.Sprintf("%s/.local/log/opssquad", os.Getenv("HOME"))
 		if err := os.MkdirAll(logDir, 0755); err != nil {
 			return nil, fmt.Errorf("failed to create log directory: %w", err)
 		}
 
 		// Open log files
-		stdoutFile, err := os.OpenFile(fmt.Sprintf("%s/agent.log", logDir), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		stdoutFile, err := os.OpenFile(fmt.Sprintf("%s/node.log", logDir), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open stdout log file: %w", err)
 		}
 
-		stderrFile, err := os.OpenFile(fmt.Sprintf("%s/agent-error.log", logDir), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		stderrFile, err := os.OpenFile(fmt.Sprintf("%s/node-error.log", logDir), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			stdoutFile.Close()
 			return nil, fmt.Errorf("failed to open stderr log file: %w", err)
@@ -119,7 +119,7 @@ func NewDarwinServiceManager(serviceName string) *DarwinServiceManager {
 	}
 }
 
-// InstallService installs the agent as a macOS launchd service
+// InstallService installs the node as a macOS launchd service
 func (d *DarwinServiceManager) InstallService(binaryPath, configPath string) error {
 	// Generate launchd plist content
 	plistContent := d.generatePlistContent(binaryPath, configPath)
@@ -128,9 +128,9 @@ func (d *DarwinServiceManager) InstallService(binaryPath, configPath string) err
 	plistPath := d.getPlistPath()
 
 	// Create the plist directory if it doesn't exist
-	plistDir := "/Users/" + os.Getenv("USER") + "/Library/LaunchAgents"
+	plistDir := "/Users/" + os.Getenv("USER") + "/Library/LaunchNodes"
 	if err := os.MkdirAll(plistDir, 0755); err != nil {
-		return fmt.Errorf("failed to create LaunchAgents directory: %w", err)
+		return fmt.Errorf("failed to create LaunchNodes directory: %w", err)
 	}
 
 	// Write the plist file
@@ -214,7 +214,7 @@ func (d *DarwinServiceManager) GetServiceStatus() (string, error) {
 
 // getPlistPath returns the path to the launchd plist file
 func (d *DarwinServiceManager) getPlistPath() string {
-	return "/Users/" + os.Getenv("USER") + "/Library/LaunchAgents/" + d.serviceName + ".plist"
+	return "/Users/" + os.Getenv("USER") + "/Library/LaunchNodes/" + d.serviceName + ".plist"
 }
 
 // generatePlistContent generates the launchd plist content
@@ -241,9 +241,9 @@ func (d *DarwinServiceManager) generatePlistContent(binaryPath, configPath strin
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>%s/agent.log</string>
+    <string>%s/node.log</string>
     <key>StandardErrorPath</key>
-    <string>%s/agent-error.log</string>
+    <string>%s/node-error.log</string>
 </dict>
 </plist>`, d.serviceName, binaryPath, configPath, logDir, logDir)
 }

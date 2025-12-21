@@ -4,40 +4,40 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
-	"github.com/fixpanic/fixpanic-cli/internal/service"
+	"github.com/fixpanic/opssquad-cli-tool/internal/connectivity"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/service"
 	"github.com/spf13/cobra"
 )
 
 var forceUninstall bool
 
-// agentUninstallCmd represents the agent uninstall command
-var agentUninstallCmd = &cobra.Command{
+// nodeUninstallCmd represents the node uninstall command
+var nodeUninstallCmd = &cobra.Command{
 	Use:   "uninstall",
-	Short: "Uninstall Fixpanic agent",
-	Long: `Uninstall the Fixpanic agent from your server.
+	Short: "Uninstall OpsSquad node",
+	Long: `Uninstall the OpsSquad node from your server.
 	
 This command removes the connectivity layer binary, configuration files,
 and systemd service. Use with caution as this will completely remove
-the agent from your system.`,
-	Example: `  # Uninstall the agent
-  fixpanic agent uninstall
+the node from your system.`,
+	Example: `  # Uninstall the node
+  opssquad node uninstall
   
   # Force uninstall without confirmation
-  fixpanic agent uninstall --force`,
-	RunE: runAgentUninstall,
+  opssquad node uninstall --force`,
+	RunE: runNodeUninstall,
 }
 
 func init() {
-	agentCmd.AddCommand(agentUninstallCmd)
+	nodeCmd.AddCommand(nodeUninstallCmd)
 
 	// Add flags
-	agentUninstallCmd.Flags().BoolVar(&forceUninstall, "force", false, "Force uninstall without confirmation")
+	nodeUninstallCmd.Flags().BoolVar(&forceUninstall, "force", false, "Force uninstall without confirmation")
 }
 
-func runAgentUninstall(cmd *cobra.Command, args []string) error {
-	fmt.Println("Uninstalling Fixpanic agent...")
+func runNodeUninstall(cmd *cobra.Command, args []string) error {
+	fmt.Println("Uninstalling OpsSquad node...")
 
 	// Get platform information
 	platformInfo, err := platform.GetPlatformInfo()
@@ -45,16 +45,16 @@ func runAgentUninstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get platform info: %w", err)
 	}
 
-	// Check if FixPanic Agent is installed
+	// Check if OpsSquad Node is installed
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsFixPanicAgentInstalled() {
-		fmt.Println("ℹ️  FixPanic Agent is not installed")
+	if !connectivityManager.IsOpsSquadNodeInstalled() {
+		fmt.Println("ℹ️  OpsSquad Node is not installed")
 		return nil
 	}
 
 	// Confirm uninstallation unless --force is used
 	if !forceUninstall {
-		fmt.Println("⚠️  This will completely remove the Fixpanic agent from your system.")
+		fmt.Println("⚠️  This will completely remove the OpsSquad node from your system.")
 		fmt.Println("The following will be removed:")
 		fmt.Printf("  - Binary: %s\n", platformInfo.GetBinaryPath())
 		fmt.Printf("  - Configuration: %s\n", platformInfo.GetConfigPath())
@@ -78,7 +78,7 @@ func runAgentUninstall(cmd *cobra.Command, args []string) error {
 		// Check if service is running
 		status, err := serviceManager.Status()
 		if err == nil && status == "active" {
-			fmt.Println("Stopping agent service...")
+			fmt.Println("Stopping node service...")
 			if err := serviceManager.Stop(); err != nil {
 				fmt.Printf("Warning: failed to stop service: %v\n", err)
 			}
@@ -91,9 +91,9 @@ func runAgentUninstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Remove FixPanic Agent binary
-	fmt.Println("Removing FixPanic Agent binary...")
-	if err := connectivityManager.RemoveFixPanicAgent(); err != nil {
+	// Remove OpsSquad Node binary
+	fmt.Println("Removing OpsSquad Node binary...")
+	if err := connectivityManager.RemoveOpsSquadNode(); err != nil {
 		fmt.Printf("Warning: failed to remove binary: %v\n", err)
 	}
 
@@ -121,8 +121,8 @@ func runAgentUninstall(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Removed empty directory: %s\n", dir)
 	}
 
-	fmt.Println("\n✅ Fixpanic agent uninstalled successfully!")
-	fmt.Println("The agent has been completely removed from your system.")
+	fmt.Println("\n✅ OpsSquad node uninstalled successfully!")
+	fmt.Println("The node has been completely removed from your system.")
 
 	return nil
 }

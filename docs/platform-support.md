@@ -1,6 +1,6 @@
 # Platform Support
 
-The FixPanic CLI is designed to run on all major operating systems and architectures.
+The OpsSquad CLI is designed to run on all major operating systems and architectures.
 
 | Platform | Architecture | Status | Notes |
 |----------|--------------|--------|-------|

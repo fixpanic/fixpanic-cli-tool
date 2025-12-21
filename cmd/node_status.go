@@ -7,38 +7,38 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fixpanic/fixpanic-cli/internal/config"
-	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
-	"github.com/fixpanic/fixpanic-cli/internal/logger"
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
-	"github.com/fixpanic/fixpanic-cli/internal/process"
-	"github.com/fixpanic/fixpanic-cli/internal/service"
+	"github.com/fixpanic/opssquad-cli-tool/internal/config"
+	"github.com/fixpanic/opssquad-cli-tool/internal/connectivity"
+	"github.com/fixpanic/opssquad-cli-tool/internal/logger"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/process"
+	"github.com/fixpanic/opssquad-cli-tool/internal/service"
 	"github.com/spf13/cobra"
 )
 
-// agentStatusCmd represents the agent status command
-var agentStatusCmd = &cobra.Command{
+// nodeStatusCmd represents the node status command
+var nodeStatusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Check Fixpanic agent status",
-	Long: `Check the status of the Fixpanic agent on your server.
+	Short: "Check OpsSquad node status",
+	Long: `Check the status of the OpsSquad node on your server.
 	
-This command shows whether the agent is installed, running, and provides
+This command shows whether the node is installed, running, and provides
 information about the current configuration and connectivity.`,
-	Example: `  # Check agent status
-  fixpanic agent status`,
-	RunE: runAgentStatus,
+	Example: `  # Check node status
+  opssquad node status`,
+	RunE: runNodeStatus,
 }
 
 func init() {
-	agentCmd.AddCommand(agentStatusCmd)
+	nodeCmd.AddCommand(nodeStatusCmd)
 }
 
-// getAgentProcessInfo detects if the FixPanic Agent process is running using cross-platform process management
-func getAgentProcessInfo() (running bool, pid int, err error) {
+// getNodeProcessInfo detects if the OpsSquad Node process is running using cross-platform process management
+func getNodeProcessInfo() (running bool, pid int, err error) {
 	// Create process manager for the current platform
 	procManager := process.NewProcessManager()
 
-	// Use a more targeted approach: check if the specific agent binary is running
+	// Use a more targeted approach: check if the specific node binary is running
 	// We'll use the ps command approach but make it more robust
 	cmd := exec.Command("ps", "aux")
 	output, err := cmd.Output()
@@ -48,8 +48,8 @@ func getAgentProcessInfo() (running bool, pid int, err error) {
 
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
-		// Look for fixpanic-connectivity-layer process (exclude grep itself and this process)
-		if strings.Contains(line, "fixpanic-connectivity-layer") {
+		// Look for opssquad-connectivity-layer process (exclude grep itself and this process)
+		if strings.Contains(line, "opssquad-connectivity-layer") {
 			if strings.Contains(line, "grep") || strings.Contains(line, "ps aux") {
 				continue
 			}
@@ -102,8 +102,8 @@ func getServicePID() int {
 	return 0
 }
 
-func runAgentStatus(cmd *cobra.Command, args []string) error {
-	logger.Header("FixPanic Agent Status")
+func runNodeStatus(cmd *cobra.Command, args []string) error {
+	logger.Header("OpsSquad Node Status")
 
 	// Check if running local development version
 	if rootCmd.Version == "dev" {
@@ -118,20 +118,20 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 
 	// Check if connectivity layer is installed
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsFixPanicAgentInstalled() {
-		logger.Error("Agent is not installed")
+	if !connectivityManager.IsOpsSquadNodeInstalled() {
+		logger.Error("Node is not installed")
 		logger.Separator()
-		logger.Info("To install the agent, run:")
-		logger.Command("fixpanic agent install --agent-id=<your-agent-id> --api-key=<your-api-key>")
+		logger.Info("To install the node, run:")
+		logger.Command("opssquad node install --node-id=<your-node-id> --api-key=<your-api-key>")
 		return nil
 	}
 
-	logger.Success("Agent is installed")
+	logger.Success("Node is installed")
 
-	// Get FixPanic Agent version
-	version, err := connectivityManager.GetFixPanicAgentVersion()
+	// Get OpsSquad Node version
+	version, err := connectivityManager.GetOpsSquadNodeVersion()
 	if err != nil {
-		logger.Warning("Could not determine FixPanic Agent version: %v", err)
+		logger.Warning("Could not determine OpsSquad Node version: %v", err)
 	} else {
 		logger.KeyValue("Version", version)
 	}
@@ -140,12 +140,12 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 	configPath := platformInfo.GetConfigPath()
 	logger.KeyValue("Configuration file", configPath)
 
-	agentConfig, err := config.LoadConfig(configPath)
+	nodeConfig, err := config.LoadConfig(configPath)
 	if err != nil {
 		logger.Warning("Could not load configuration: %v", err)
 	} else {
-		logger.KeyValue("Agent ID", agentConfig.App.AgentID)
-		logger.KeyValue("Log level", agentConfig.Logging.Level)
+		logger.KeyValue("Node ID", nodeConfig.App.NodeID)
+		logger.KeyValue("Log level", nodeConfig.Logging.Level)
 	}
 
 	// Check service status or process status
@@ -185,7 +185,7 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 	if !isRunning {
 		// Systemd not active or not available, check direct process
 		var err error
-		isRunning, pid, err = getAgentProcessInfo()
+		isRunning, pid, err = getNodeProcessInfo()
 		if err != nil {
 			fmt.Printf("⚠️  Could not check process status: %v\n", err)
 		} else if isRunning {
@@ -195,40 +195,40 @@ func runAgentStatus(cmd *cobra.Command, args []string) error {
 
 	// Report Status
 	if isRunning {
-		logger.Success("Agent is RUNNING")
+		logger.Success("Node is RUNNING")
 		logger.KeyValue("Mode", mode)
 		if pid > 0 {
 			logger.KeyValue("PID", fmt.Sprintf("%d", pid))
 		}
 		if serviceStatus != "" && mode != "Systemd Service" {
 			// Inform user that systemd thinks it's stopped, but process is running
-			fmt.Printf("ℹ️  Note: Systemd service status is '%s', but agent is running as a background process.\n", serviceStatus)
+			fmt.Printf("ℹ️  Note: Systemd service status is '%s', but node is running as a background process.\n", serviceStatus)
 		}
 	} else {
 		// Not running
-		fmt.Println("❌ Agent is STOPPED")
+		fmt.Println("❌ Node is STOPPED")
 		if serviceStatus != "" {
 			fmt.Printf("   Service status: %s\n", serviceStatus)
 		}
 	}
 
 	// Check binary location
-	binaryPath := platformInfo.GetFixPanicAgentBinaryPath()
+	binaryPath := platformInfo.GetOpsSquadNodeBinaryPath()
 	if _, err := os.Stat(binaryPath); err == nil {
 		fmt.Printf("📍 Binary location: %s\n", binaryPath)
 	}
 
 	// Check log file
-	logPath := fmt.Sprintf("%s/agent.log", platformInfo.LogDir)
+	logPath := fmt.Sprintf("%s/node.log", platformInfo.LogDir)
 	if _, err := os.Stat(logPath); err == nil {
 		fmt.Printf("📝 Log file: %s\n", logPath)
 	}
 
 	fmt.Println("\n💡 Useful commands:")
-	fmt.Println("  fixpanic agent start    - Start the agent")
-	fmt.Println("  fixpanic agent stop     - Stop the agent")
-	fmt.Println("  fixpanic agent logs     - View agent logs")
-	fmt.Println("  fixpanic agent uninstall - Remove the agent")
+	fmt.Println("  opssquad node start    - Start the node")
+	fmt.Println("  opssquad node stop     - Stop the node")
+	fmt.Println("  opssquad node logs     - View node logs")
+	fmt.Println("  opssquad node uninstall - Remove the node")
 
 	return nil
 }

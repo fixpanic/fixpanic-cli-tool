@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fixpanic/fixpanic-cli/internal/logger"
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/logger"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
 )
 
 // Manager handles connectivity layer binary operations
@@ -32,7 +32,7 @@ func NewManager(platform *platform.PlatformInfo) *Manager {
 
 // Download downloads the connectivity layer binary
 func (m *Manager) Download(version string) error {
-	url, err := platform.GetFixPanicAgentDownloadURL(version)
+	url, err := platform.GetOpsSquadNodeDownloadURL(version)
 	if err != nil {
 		return fmt.Errorf("failed to get download URL: %w", err)
 	}
@@ -97,24 +97,24 @@ func (m *Manager) Download(version string) error {
 }
 
 // IsInstalled checks if the connectivity layer is installed (DEPRECATED)
-// TODO: Remove this function after migration to IsFixPanicAgentInstalled
+// TODO: Remove this function after migration to IsOpsSquadNodeInstalled
 func (m *Manager) IsInstalled() bool {
-	fmt.Println("WARNING: IsInstalled() is deprecated, use IsFixPanicAgentInstalled() instead")
-	return m.IsFixPanicAgentInstalled()
+	fmt.Println("WARNING: IsInstalled() is deprecated, use IsOpsSquadNodeInstalled() instead")
+	return m.IsOpsSquadNodeInstalled()
 }
 
 // GetVersion returns the version of the installed connectivity layer (DEPRECATED)
-// TODO: Remove this function after migration to GetFixPanicAgentVersion
+// TODO: Remove this function after migration to GetOpsSquadNodeVersion
 func (m *Manager) GetVersion() (string, error) {
-	fmt.Println("WARNING: GetVersion() is deprecated, use GetFixPanicAgentVersion() instead")
-	return m.GetFixPanicAgentVersion()
+	fmt.Println("WARNING: GetVersion() is deprecated, use GetOpsSquadNodeVersion() instead")
+	return m.GetOpsSquadNodeVersion()
 }
 
 // Remove removes the connectivity layer binary (DEPRECATED)
-// TODO: Remove this function after migration to RemoveFixPanicAgent
+// TODO: Remove this function after migration to RemoveOpsSquadNode
 func (m *Manager) Remove() error {
-	fmt.Println("WARNING: Remove() is deprecated, use RemoveFixPanicAgent() instead")
-	return m.RemoveFixPanicAgent()
+	fmt.Println("WARNING: Remove() is deprecated, use RemoveOpsSquadNode() instead")
+	return m.RemoveOpsSquadNode()
 }
 
 // VerifyChecksum verifies the binary checksum
@@ -145,14 +145,14 @@ func (m *Manager) GetBinaryPath() string {
 	return m.platform.GetBinaryPath()
 }
 
-// DownloadFixPanicAgent downloads the FixPanic Agent binary from GitHub Releases
-func (m *Manager) DownloadFixPanicAgent(version string) error {
-	downloadURL, err := platform.GetFixPanicAgentDownloadURL(version)
+// DownloadOpsSquadNode downloads the OpsSquad Node binary from GitHub Releases
+func (m *Manager) DownloadOpsSquadNode(version string) error {
+	downloadURL, err := platform.GetOpsSquadNodeDownloadURL(version)
 	if err != nil {
 		return fmt.Errorf("failed to get download URL: %w", err)
 	}
 
-	binaryPath := m.platform.GetFixPanicAgentBinaryPath()
+	binaryPath := m.platform.GetOpsSquadNodeBinaryPath()
 
 	logger.Loading("Downloading from %s...", downloadURL)
 
@@ -220,23 +220,23 @@ func (m *Manager) DownloadFixPanicAgent(version string) error {
 		return fmt.Errorf("failed to move binary to final location: %w", err)
 	}
 
-	logger.Success("FixPanic Agent downloaded to %s", binaryPath)
+	logger.Success("OpsSquad Node downloaded to %s", binaryPath)
 	return nil
 }
 
-// IsFixPanicAgentInstalled checks if the FixPanic Agent is installed
-func (m *Manager) IsFixPanicAgentInstalled() bool {
-	binaryPath := m.platform.GetFixPanicAgentBinaryPath()
+// IsOpsSquadNodeInstalled checks if the OpsSquad Node is installed
+func (m *Manager) IsOpsSquadNodeInstalled() bool {
+	binaryPath := m.platform.GetOpsSquadNodeBinaryPath()
 	_, err := os.Stat(binaryPath)
 	return err == nil
 }
 
-// GetFixPanicAgentVersion returns the version of the installed FixPanic Agent
-func (m *Manager) GetFixPanicAgentVersion() (string, error) {
-	binaryPath := m.platform.GetFixPanicAgentBinaryPath()
+// GetOpsSquadNodeVersion returns the version of the installed OpsSquad Node
+func (m *Manager) GetOpsSquadNodeVersion() (string, error) {
+	binaryPath := m.platform.GetOpsSquadNodeBinaryPath()
 
-	if !m.IsFixPanicAgentInstalled() {
-		return "", fmt.Errorf("FixPanic Agent not installed")
+	if !m.IsOpsSquadNodeInstalled() {
+		return "", fmt.Errorf("OpsSquad Node not installed")
 	}
 
 	// Execute with --version flag
@@ -249,27 +249,27 @@ func (m *Manager) GetFixPanicAgentVersion() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-// UpdateFixPanicAgent updates the FixPanic Agent to the specified version
-func (m *Manager) UpdateFixPanicAgent(version string) error {
-	fmt.Printf("Updating FixPanic Agent to version %s...\n", version)
+// UpdateOpsSquadNode updates the OpsSquad Node to the specified version
+func (m *Manager) UpdateOpsSquadNode(version string) error {
+	fmt.Printf("Updating OpsSquad Node to version %s...\n", version)
 
 	// Remove old version
-	if err := m.RemoveFixPanicAgent(); err != nil {
+	if err := m.RemoveOpsSquadNode(); err != nil {
 		return fmt.Errorf("failed to remove old version: %w", err)
 	}
 
 	// Download new version
-	if err := m.DownloadFixPanicAgent(version); err != nil {
+	if err := m.DownloadOpsSquadNode(version); err != nil {
 		return fmt.Errorf("failed to download new version: %w", err)
 	}
 
-	fmt.Printf("FixPanic Agent updated successfully\n")
+	fmt.Printf("OpsSquad Node updated successfully\n")
 	return nil
 }
 
-// RemoveFixPanicAgent removes the FixPanic Agent binary
-func (m *Manager) RemoveFixPanicAgent() error {
-	binaryPath := m.platform.GetFixPanicAgentBinaryPath()
+// RemoveOpsSquadNode removes the OpsSquad Node binary
+func (m *Manager) RemoveOpsSquadNode() error {
+	binaryPath := m.platform.GetOpsSquadNodeBinaryPath()
 
 	if err := os.Remove(binaryPath); err != nil {
 		if os.IsNotExist(err) {
@@ -282,24 +282,24 @@ func (m *Manager) RemoveFixPanicAgent() error {
 }
 
 // Update updates the connectivity layer to the specified version (DEPRECATED)
-// TODO: Remove this function after migration to UpdateFixPanicAgent
+// TODO: Remove this function after migration to UpdateOpsSquadNode
 func (m *Manager) Update(version string) error {
-	fmt.Println("WARNING: Update() is deprecated, use UpdateFixPanicAgent() instead")
-	return m.UpdateFixPanicAgent(version)
+	fmt.Println("WARNING: Update() is deprecated, use UpdateOpsSquadNode() instead")
+	return m.UpdateOpsSquadNode(version)
 }
 
-// AgentRelease represents a GitHub release for the agent binary
-type AgentRelease struct {
+// NodeRelease represents a GitHub release for the node binary
+type NodeRelease struct {
 	TagName     string `json:"tag_name"`
 	Name        string `json:"name"`
 	PublishedAt string `json:"published_at"`
 }
 
-// GetLatestAgentVersion fetches the latest agent version from GitHub releases
-func (m *Manager) GetLatestAgentVersion() (string, error) {
+// GetLatestNodeVersion fetches the latest node version from GitHub releases
+func (m *Manager) GetLatestNodeVersion() (string, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	url := "https://api.github.com/repos/fixpanic/fixpanic-connectivity-layer-release/releases/latest"
+	url := "https://api.github.com/repos/opssquad/opssquad-connectivity-layer-release/releases/latest"
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -311,7 +311,7 @@ func (m *Manager) GetLatestAgentVersion() (string, error) {
 		return "", fmt.Errorf("GitHub API request failed: %d", resp.StatusCode)
 	}
 
-	var release AgentRelease
+	var release NodeRelease
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
 		return "", fmt.Errorf("failed to parse release info: %w", err)
 	}
@@ -319,18 +319,18 @@ func (m *Manager) GetLatestAgentVersion() (string, error) {
 	return release.TagName, nil
 }
 
-// IsAgentUpdateAvailable checks if a newer version of the agent is available
-func (m *Manager) IsAgentUpdateAvailable() (bool, string, error) {
-	if !m.IsFixPanicAgentInstalled() {
+// IsNodeUpdateAvailable checks if a newer version of the node is available
+func (m *Manager) IsNodeUpdateAvailable() (bool, string, error) {
+	if !m.IsOpsSquadNodeInstalled() {
 		return true, "", nil // Need to install
 	}
 
-	currentVersion, err := m.GetFixPanicAgentVersion()
+	currentVersion, err := m.GetOpsSquadNodeVersion()
 	if err != nil {
 		return true, "", fmt.Errorf("failed to get current version: %w", err)
 	}
 
-	latestVersion, err := m.GetLatestAgentVersion()
+	latestVersion, err := m.GetLatestNodeVersion()
 	if err != nil {
 		return false, "", fmt.Errorf("failed to get latest version: %w", err)
 	}
@@ -340,7 +340,7 @@ func (m *Manager) IsAgentUpdateAvailable() (bool, string, error) {
 	currentClean := strings.TrimSpace(currentVersion)
 	latestClean := strings.TrimSpace(latestVersion)
 
-	// Extract version from output like "fixpanic-connectivity-layer v1.0.0 - ..."
+	// Extract version from output like "opssquad-connectivity-layer v1.0.0 - ..."
 	if strings.Contains(currentClean, " v") {
 		parts := strings.Split(currentClean, " v")
 		if len(parts) > 1 {
@@ -352,11 +352,11 @@ func (m *Manager) IsAgentUpdateAvailable() (bool, string, error) {
 	return currentClean != latestClean, latestClean, nil
 }
 
-// EnsureLatestAgent checks and updates the agent binary if needed
-func (m *Manager) EnsureLatestAgent() error {
-	logger.Progress("Checking for agent binary updates")
+// EnsureLatestNode checks and updates the node binary if needed
+func (m *Manager) EnsureLatestNode() error {
+	logger.Progress("Checking for node binary updates")
 
-	updateAvailable, latestVersion, err := m.IsAgentUpdateAvailable()
+	updateAvailable, latestVersion, err := m.IsNodeUpdateAvailable()
 	if err != nil {
 		logger.Warning("Failed to check for updates: %v", err)
 		// Continue with existing binary if update check fails
@@ -364,31 +364,31 @@ func (m *Manager) EnsureLatestAgent() error {
 	}
 
 	if !updateAvailable {
-		if m.IsFixPanicAgentInstalled() {
-			logger.List("Agent binary is up to date")
+		if m.IsOpsSquadNodeInstalled() {
+			logger.List("Node binary is up to date")
 		}
 		return nil
 	}
 
-	// Update or install the agent
-	if m.IsFixPanicAgentInstalled() {
-		currentVersion, _ := m.GetFixPanicAgentVersion()
-		logger.Info("Agent update available: %s → %s", currentVersion, latestVersion)
-		logger.Progress("Downloading latest agent binary")
+	// Update or install the node
+	if m.IsOpsSquadNodeInstalled() {
+		currentVersion, _ := m.GetOpsSquadNodeVersion()
+		logger.Info("Node update available: %s → %s", currentVersion, latestVersion)
+		logger.Progress("Downloading latest node binary")
 	} else {
-		logger.Progress("Installing agent binary")
+		logger.Progress("Installing node binary")
 	}
 
-	if err := m.DownloadFixPanicAgent("latest"); err != nil {
-		return fmt.Errorf("failed to download latest agent: %w", err)
+	if err := m.DownloadOpsSquadNode("latest"); err != nil {
+		return fmt.Errorf("failed to download latest node: %w", err)
 	}
 
 	// Verify the update
-	newVersion, err := m.GetFixPanicAgentVersion()
+	newVersion, err := m.GetOpsSquadNodeVersion()
 	if err != nil {
 		logger.Warning("Failed to verify new version: %v", err)
 	} else {
-		logger.Success("Agent binary updated to: %s", newVersion)
+		logger.Success("Node binary updated to: %s", newVersion)
 	}
 
 	return nil

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fixpanic/fixpanic-cli/internal/logger"
+	"github.com/fixpanic/opssquad-cli-tool/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -25,8 +25,8 @@ var (
 // upgradeCmd represents the upgrade command
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
-	Short: "Upgrade FixPanic CLI to the latest version",
-	Long: `Upgrade the FixPanic CLI to the latest version available on GitHub releases.
+	Short: "Upgrade OpsSquad CLI to the latest version",
+	Long: `Upgrade the OpsSquad CLI to the latest version available on GitHub releases.
 
 This command will:
 - Check the current version
@@ -37,13 +37,13 @@ This command will:
 The upgrade is performed safely by downloading to a temporary location first,
 then replacing the current binary atomically.`,
 	Example: `  # Check for available updates
-  fixpanic upgrade --check
+  opssquad upgrade --check
 
   # Upgrade to the latest version
-  fixpanic upgrade
+  opssquad upgrade
 
   # Force upgrade even if already on latest version
-  fixpanic upgrade --force`,
+  opssquad upgrade --force`,
 	RunE: runUpgrade,
 }
 
@@ -69,7 +69,7 @@ type GitHubRelease struct {
 }
 
 func runUpgrade(cmd *cobra.Command, args []string) error {
-	logger.Header("FixPanic CLI Upgrade")
+	logger.Header("OpsSquad CLI Upgrade")
 
 	// Get current version info
 	logger.Step(1, "Checking current version")
@@ -149,7 +149,7 @@ func runUpgrade(cmd *cobra.Command, args []string) error {
 	}
 
 	logger.Separator()
-	logger.Success("FixPanic CLI upgraded successfully!")
+	logger.Success("OpsSquad CLI upgraded successfully!")
 	logger.KeyValue("New version", latestRelease.TagName)
 	logger.Separator()
 
@@ -160,7 +160,7 @@ func runUpgrade(cmd *cobra.Command, args []string) error {
 		logger.Separator()
 	}
 
-	logger.Info("Run 'fixpanic --version' to confirm the new version")
+	logger.Info("Run 'opssquad --version' to confirm the new version")
 
 	return nil
 }
@@ -193,7 +193,7 @@ func getCurrentBinaryPath() (string, error) {
 func getLatestRelease() (*GitHubRelease, error) {
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	url := "https://api.github.com/repos/fixpanic/fixpanic-cli-tool/releases/latest"
+	url := "https://api.github.com/repos/fixpanic/opssquad-cli-tool/releases/latest"
 	logger.Loading("Fetching from GitHub API...")
 
 	resp, err := client.Get(url)
@@ -221,7 +221,7 @@ func getLatestRelease() (*GitHubRelease, error) {
 // downloadNewVersion downloads the appropriate binary for the current platform
 func downloadNewVersion(release *GitHubRelease) (string, error) {
 	// Determine platform-specific binary name
-	assetName := fmt.Sprintf("fixpanic-%s-%s", runtime.GOOS, runtime.GOARCH)
+	assetName := fmt.Sprintf("opssquad-%s-%s", runtime.GOOS, runtime.GOARCH)
 	if runtime.GOOS != "windows" {
 		assetName += ".tar.gz"
 	} else {
@@ -247,7 +247,7 @@ func downloadNewVersion(release *GitHubRelease) (string, error) {
 	logger.KeyValue("Size", fmt.Sprintf("%.1f MB", float64(assetSize)/(1024*1024)))
 
 	// Create temporary directory
-	tempDir, err := os.MkdirTemp("", "fixpanic-upgrade-*")
+	tempDir, err := os.MkdirTemp("", "opssquad-upgrade-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp directory: %w", err)
 	}
@@ -342,10 +342,10 @@ func extractBinaryFromTarGz(archivePath, extractDir string) (string, error) {
 			return "", err
 		}
 
-		// Look for the binary file (platform-specific name or "fixpanic")
+		// Look for the binary file (platform-specific name or "opssquad")
 		baseName := filepath.Base(header.Name)
-		if header.Typeflag == tar.TypeReg && (baseName == "fixpanic" || strings.HasPrefix(baseName, "fixpanic-")) {
-			binaryPath := filepath.Join(extractDir, "fixpanic")
+		if header.Typeflag == tar.TypeReg && (baseName == "opssquad" || strings.HasPrefix(baseName, "opssquad-")) {
+			binaryPath := filepath.Join(extractDir, "opssquad")
 
 			outFile, err := os.Create(binaryPath)
 			if err != nil {
@@ -445,7 +445,7 @@ func replaceBinary(currentPath, newPath string) error {
 	}
 
 	logger.Info("Binary replaced successfully. Current process will continue with old version.")
-	logger.Info("Next execution of 'fixpanic' will use the new version.")
+	logger.Info("Next execution of 'opssquad' will use the new version.")
 
 	return nil
 }

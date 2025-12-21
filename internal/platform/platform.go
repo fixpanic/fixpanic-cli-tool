@@ -36,15 +36,15 @@ func GetPlatformInfo() (*PlatformInfo, error) {
 	var libDir, binDir, configDir, logDir string
 
 	if isRoot {
-		libDir = "/usr/local/lib/fixpanic"
+		libDir = "/usr/local/lib/opssquad"
 		binDir = "/usr/local/bin"
-		configDir = "/etc/fixpanic"
-		logDir = "/var/log/fixpanic"
+		configDir = "/etc/opssquad"
+		logDir = "/var/log/opssquad"
 	} else {
-		libDir = fmt.Sprintf("%s/.local/lib/fixpanic", home)
+		libDir = fmt.Sprintf("%s/.local/lib/opssquad", home)
 		binDir = fmt.Sprintf("%s/.local/bin", home)
-		configDir = fmt.Sprintf("%s/.config/fixpanic", home)
-		logDir = fmt.Sprintf("%s/.local/log/fixpanic", home)
+		configDir = fmt.Sprintf("%s/.config/opssquad", home)
+		logDir = fmt.Sprintf("%s/.local/log/opssquad", home)
 	}
 
 	return &PlatformInfo{
@@ -59,28 +59,28 @@ func GetPlatformInfo() (*PlatformInfo, error) {
 	}, nil
 }
 
-// GetFixPanicAgentBinaryName returns the correct binary name for FixPanic Agent
-func GetFixPanicAgentBinaryName() string {
+// GetOpsSquadNodeBinaryName returns the correct binary name for OpsSquad Node
+func GetOpsSquadNodeBinaryName() string {
 	if runtime.GOOS == "windows" {
-		return "fixpanic-connectivity-layer.exe"
+		return "opssquad-connectivity-layer.exe"
 	}
-	return "fixpanic-connectivity-layer"
+	return "opssquad-connectivity-layer"
 }
 
 // GetConnectivityBinaryName returns the connectivity binary name for the current platform (DEPRECATED)
-// TODO: Remove this function after migration to GetFixPanicAgentBinaryName
+// TODO: Remove this function after migration to GetOpsSquadNodeBinaryName
 func GetConnectivityBinaryName() string {
-	fmt.Println("WARNING: GetConnectivityBinaryName is deprecated, use GetFixPanicAgentBinaryName instead")
-	return GetFixPanicAgentBinaryName()
+	fmt.Println("WARNING: GetConnectivityBinaryName is deprecated, use GetOpsSquadNodeBinaryName instead")
+	return GetOpsSquadNodeBinaryName()
 }
 
-// GetFixPanicAgentBinaryPath returns the path to the FixPanic Agent binary
-func (p *PlatformInfo) GetFixPanicAgentBinaryPath() string {
-	return fmt.Sprintf("%s/%s", p.LibDir, GetFixPanicAgentBinaryName())
+// GetOpsSquadNodeBinaryPath returns the path to the OpsSquad Node binary
+func (p *PlatformInfo) GetOpsSquadNodeBinaryPath() string {
+	return fmt.Sprintf("%s/%s", p.LibDir, GetOpsSquadNodeBinaryName())
 }
 
-// GetFixPanicAgentPlatformInfo returns normalized platform info matching task requirements
-func GetFixPanicAgentPlatformInfo() (os, arch string, err error) {
+// GetOpsSquadNodePlatformInfo returns normalized platform info matching task requirements
+func GetOpsSquadNodePlatformInfo() (os, arch string, err error) {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
 
@@ -113,28 +113,28 @@ func GetFixPanicAgentPlatformInfo() (os, arch string, err error) {
 	return os, arch, nil
 }
 
-// GetFixPanicAgentDownloadURL returns the correct GitHub Releases URL
-func GetFixPanicAgentDownloadURL(version string) (string, error) {
-	os, arch, err := GetFixPanicAgentPlatformInfo()
+// GetOpsSquadNodeDownloadURL returns the correct GitHub Releases URL
+func GetOpsSquadNodeDownloadURL(version string) (string, error) {
+	os, arch, err := GetOpsSquadNodePlatformInfo()
 	if err != nil {
 		return "", fmt.Errorf("failed to get platform info: %w", err)
 	}
 
 	// Construct URL as per task prompt requirements
-	baseURL := "https://github.com/fixpanic/fixpanic-connectivity-layer-release/releases"
+	baseURL := "https://github.com/opssquad/opssquad-connectivity-layer-release/releases"
 
 	if version == "latest" {
-		return fmt.Sprintf("%s/latest/download/fixpanic-connectivity-layer-%s-%s", baseURL, os, arch), nil
+		return fmt.Sprintf("%s/latest/download/opssquad-connectivity-layer-%s-%s", baseURL, os, arch), nil
 	}
 
-	return fmt.Sprintf("%s/download/%s/fixpanic-connectivity-layer-%s-%s", baseURL, version, os, arch), nil
+	return fmt.Sprintf("%s/download/%s/opssquad-connectivity-layer-%s-%s", baseURL, version, os, arch), nil
 }
 
 // GetConnectivityDownloadURL returns the download URL for the connectivity binary (DEPRECATED)
-// TODO: Remove this function after migration to GetFixPanicAgentDownloadURL
+// TODO: Remove this function after migration to GetOpsSquadNodeDownloadURL
 func GetConnectivityDownloadURL(version string) string {
-	fmt.Println("WARNING: GetConnectivityDownloadURL is deprecated, use GetFixPanicAgentDownloadURL instead")
-	url, err := GetFixPanicAgentDownloadURL(version)
+	fmt.Println("WARNING: GetConnectivityDownloadURL is deprecated, use GetOpsSquadNodeDownloadURL instead")
+	url, err := GetOpsSquadNodeDownloadURL(version)
 	if err != nil {
 		// For backward compatibility, return empty string on error
 		fmt.Printf("Error getting download URL: %v\n", err)
@@ -159,10 +159,10 @@ func IsSystemdAvailable() bool {
 
 // GetSystemdServiceName returns the systemd service name
 func GetSystemdServiceName() string {
-	return "fixpanic-connectivity-layer.service"
+	return "opssquad-connectivity-layer.service"
 }
 
-// CreateDirectories creates the necessary directories for the agent
+// CreateDirectories creates the necessary directories for the node
 func (p *PlatformInfo) CreateDirectories() error {
 	dirs := []string{
 		p.LibDir,
@@ -181,12 +181,12 @@ func (p *PlatformInfo) CreateDirectories() error {
 
 // GetBinaryPath returns the full path to the connectivity binary
 func (p *PlatformInfo) GetBinaryPath() string {
-	return fmt.Sprintf("%s/%s", p.LibDir, GetFixPanicAgentBinaryName())
+	return fmt.Sprintf("%s/%s", p.LibDir, GetOpsSquadNodeBinaryName())
 }
 
-// GetConfigPath returns the full path to the agent config file
+// GetConfigPath returns the full path to the node config file
 func (p *PlatformInfo) GetConfigPath() string {
-	return fmt.Sprintf("%s/agent.yaml", p.ConfigDir)
+	return fmt.Sprintf("%s/node.yaml", p.ConfigDir)
 }
 
 // GetServiceFilePath returns the full path to the systemd service file

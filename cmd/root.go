@@ -17,10 +17,10 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "fixpanic",
-	Short: "Fixpanic CLI - Deploy and manage Fixpanic agents",
-	Long: `Fixpanic CLI is a command-line tool for deploying and managing Fixpanic agents
-on customer servers. It handles agent installation, configuration, and lifecycle management.
+	Use:   "opssquad",
+	Short: "OpsSquad CLI - Deploy and manage OpsSquad nodes",
+	Long: `OpsSquad CLI is a command-line tool for deploying and managing OpsSquad nodes
+on customer servers. It handles node installation, configuration, and lifecycle management.
 
 The CLI downloads and manages the connectivity layer binary, sets up systemd services,
 and provides commands for testing and validation.`,
@@ -49,8 +49,8 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	// Global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.fixpanic.yaml)")
-	rootCmd.PersistentFlags().String("socket-server", "socket.fixpanic.com:8080", "Socket server address")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.opssquad.yaml)")
+	rootCmd.PersistentFlags().String("socket-server", "socket.opssquad.ai", "Socket server address")
 	viper.BindPFlag("socket_server", rootCmd.PersistentFlags().Lookup("socket-server"))
 }
 
@@ -64,10 +64,10 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".fixpanic" (without extension).
+		// Search config in home directory with name ".opssquad" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".fixpanic")
+		viper.SetConfigName(".opssquad")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

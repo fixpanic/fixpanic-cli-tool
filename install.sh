@@ -1,6 +1,6 @@
 #!/bin/bash
-# Fixpanic CLI Installation Script
-# This script downloads and installs the Fixpanic CLI tool
+# OpsSquad CLI Installation Script
+# This script downloads and installs the OpsSquad CLI tool
 
 set -e
 
@@ -12,8 +12,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="fixpanic/fixpanic-cli-tool"
-BINARY_NAME="fixpanic"
+GITHUB_REPO="fixpanic/opssquad-cli-tool"
+BINARY_NAME="opssquad"
 INSTALL_DIR="/usr/local/bin"
 USER_INSTALL_DIR="$HOME/.local/bin"
 VERSION="${VERSION:-latest}"
@@ -103,7 +103,7 @@ get_latest_version() {
 }
 
 download_binary() {
-    print_info "Downloading Fixpanic CLI..."
+    print_info "Downloading OpsSquad CLI..."
 
     # Download the .tar.gz archive for Unix, or .exe for Windows
     if [ "$PLATFORM" = "windows" ]; then
@@ -113,7 +113,7 @@ download_binary() {
     fi
 
     DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/releases/download/${VERSION}/${ARCHIVE_NAME}"
-    TEMP_DIR="/tmp/fixpanic-install-$$"
+    TEMP_DIR="/tmp/opssquad-install-$$"
     mkdir -p "$TEMP_DIR"
     ARCHIVE_PATH="$TEMP_DIR/$ARCHIVE_NAME"
 
@@ -187,7 +187,7 @@ download_binary() {
 }
 
 install_binary() {
-    print_info "Installing Fixpanic CLI..."
+    print_info "Installing OpsSquad CLI..."
     
     # Determine installation directory
     if [ -w "$INSTALL_DIR" ]; then
@@ -228,7 +228,7 @@ install_binary() {
     
     # Verify installation
     if command -v "$BINARY_NAME" >/dev/null 2>&1; then
-        print_success "Fixpanic CLI installed successfully"
+        print_success "OpsSquad CLI installed successfully"
         
         # Test basic functionality
         if "$BINARY_NAME" --version >/dev/null 2>&1; then
@@ -248,12 +248,12 @@ install_binary() {
 }
 
 cleanup() {
-    rm -rf "/tmp/fixpanic-install-$$"
+    rm -rf "/tmp/opssquad-install-$$"
 }
 
 # Main installation process
 main() {
-    print_info "Fixpanic CLI Installation Script"
+    print_info "OpsSquad CLI Installation Script"
     print_info "================================"
     
     # Detect platform
@@ -278,9 +278,9 @@ main() {
     
     print_success "Installation completed successfully!"
     print_info "Next steps:"
-    echo "  1. Run 'fixpanic agent install --agent-id=<your-agent-id> --api-key=<your-api-key>' to install an agent"
-    echo "  2. Run 'fixpanic agent status' to check agent status"
-    echo "  3. Run 'fixpanic --help' for more commands"
+    echo "  1. Run 'opssquad node install --node-id=<your-node-id> --api-key=<your-api-key>' to install an node"
+    echo "  2. Run 'opssquad node status' to check node status"
+    echo "  3. Run 'opssquad --help' for more commands"
 }
 
 # Set up trap for cleanup

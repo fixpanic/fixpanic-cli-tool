@@ -6,33 +6,33 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fixpanic/fixpanic-cli/internal/connectivity"
-	"github.com/fixpanic/fixpanic-cli/internal/logger"
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
-	"github.com/fixpanic/fixpanic-cli/internal/process"
-	"github.com/fixpanic/fixpanic-cli/internal/service"
+	"github.com/fixpanic/opssquad-cli-tool/internal/connectivity"
+	"github.com/fixpanic/opssquad-cli-tool/internal/logger"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/process"
+	"github.com/fixpanic/opssquad-cli-tool/internal/service"
 	"github.com/spf13/cobra"
 )
 
-// agentStartCmd represents the agent start command
-var agentStartCmd = &cobra.Command{
+// nodeStartCmd represents the node start command
+var nodeStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start Fixpanic agent",
-	Long: `Start the Fixpanic agent service.
+	Short: "Start OpsSquad node",
+	Long: `Start the OpsSquad node service.
 	
-This command starts the agent service using systemd if available, or runs the
+This command starts the node service using systemd if available, or runs the
 connectivity layer binary directly if systemd is not available.`,
-	Example: `  # Start the agent
-  fixpanic agent start`,
-	RunE: runAgentStart,
+	Example: `  # Start the node
+  opssquad node start`,
+	RunE: runNodeStart,
 }
 
 func init() {
-	agentCmd.AddCommand(agentStartCmd)
+	nodeCmd.AddCommand(nodeStartCmd)
 }
 
-func runAgentStart(cmd *cobra.Command, args []string) error {
-	logger.Header("Starting FixPanic Agent")
+func runNodeStart(cmd *cobra.Command, args []string) error {
+	logger.Header("Starting OpsSquad Node")
 
 	// Get platform information
 	platformInfo, err := platform.GetPlatformInfo()
@@ -47,48 +47,48 @@ func runAgentStart(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Validate agent installation
-	connectivityManager, err := validateAgentInstall(platformInfo)
+	// Validate node installation
+	connectivityManager, err := validateNodeInstall(platformInfo)
 	if err != nil {
 		return err
 	}
 
-	// Clean up old agents
-	logger.Step(2, "Checking for existing agent processes")
-	if err := cleanUpOldAgents(); err != nil {
+	// Clean up old nodes
+	logger.Step(2, "Checking for existing node processes")
+	if err := cleanUpOldNodes(); err != nil {
 		return err
 	}
 
-	// Start the agent service
-	return startAgentService(platformInfo, connectivityManager)
+	// Start the node service
+	return startNodeService(platformInfo, connectivityManager)
 }
 
-// validateAgentInstall checks if the agent is installed
-func validateAgentInstall(platformInfo *platform.PlatformInfo) (*connectivity.Manager, error) {
-	logger.Step(1, "Checking agent installation")
+// validateNodeInstall checks if the node is installed
+func validateNodeInstall(platformInfo *platform.PlatformInfo) (*connectivity.Manager, error) {
+	logger.Step(1, "Checking node installation")
 	connectivityManager := connectivity.NewManager(platformInfo)
 
-	if !connectivityManager.IsFixPanicAgentInstalled() {
-		return nil, fmt.Errorf("FixPanic Agent not installed. Run 'fixpanic agent install' first")
+	if !connectivityManager.IsOpsSquadNodeInstalled() {
+		return nil, fmt.Errorf("OpsSquad Node not installed. Run 'opssquad node install' first")
 	}
 
-	logger.Success("Agent installation verified")
+	logger.Success("Node installation verified")
 	return connectivityManager, nil
 }
 
-// cleanUpOldAgents stops any existing agent processes before starting a new one
-func cleanUpOldAgents() error {
-	existingPIDs, err := getAllAgentProcessPIDs()
+// cleanUpOldNodes stops any existing node processes before starting a new one
+func cleanUpOldNodes() error {
+	existingPIDs, err := getAllNodeProcessPIDs()
 	if err != nil {
-		return fmt.Errorf("failed to check for existing agent processes: %w", err)
+		return fmt.Errorf("failed to check for existing node processes: %w", err)
 	}
 
 	if len(existingPIDs) > 0 {
-		fmt.Printf("⚠️  Found %d existing agent process(es) running:\n", len(existingPIDs))
+		fmt.Printf("⚠️  Found %d existing node process(es) running:\n", len(existingPIDs))
 		for _, pid := range existingPIDs {
 			fmt.Printf("   - PID: %d\n", pid)
 		}
-		fmt.Println("🛑 Stopping existing processes before starting new agent...")
+		fmt.Println("🛑 Stopping existing processes before starting new node...")
 
 		// Stop all existing processes
 		procManager := process.NewProcessManager()
@@ -102,7 +102,7 @@ func cleanUpOldAgents() error {
 		}
 
 		if stoppedCount == 0 {
-			return fmt.Errorf("failed to stop any existing agent processes")
+			return fmt.Errorf("failed to stop any existing node processes")
 		}
 
 		fmt.Printf("✅ Stopped %d existing process(es)\n", stoppedCount)
@@ -112,9 +112,9 @@ func cleanUpOldAgents() error {
 	return nil
 }
 
-// startAgentService starts the agent using systemd if available, or directly if not
-func startAgentService(platformInfo *platform.PlatformInfo, connectivityManager *connectivity.Manager) error {
-	binaryPath := platformInfo.GetFixPanicAgentBinaryPath()
+// startNodeService starts the node using systemd if available, or directly if not
+func startNodeService(platformInfo *platform.PlatformInfo, connectivityManager *connectivity.Manager) error {
+	binaryPath := platformInfo.GetOpsSquadNodeBinaryPath()
 	useSystemd := false
 
 	// Try to use systemd service if available AND usable
@@ -128,7 +128,7 @@ func startAgentService(platformInfo *platform.PlatformInfo, connectivityManager 
 	}
 
 	if useSystemd {
-		logger.Step(3, "Starting agent service")
+		logger.Step(3, "Starting node service")
 		serviceManager := service.NewManager(platformInfo)
 
 		// Check current status
@@ -137,7 +137,7 @@ func startAgentService(platformInfo *platform.PlatformInfo, connectivityManager 
 		if err != nil {
 			fmt.Printf("Warning: could not check service status: %v\n", err)
 		} else if status == "active" {
-			fmt.Println("✅ Agent service is already running")
+			fmt.Println("✅ Node service is already running")
 			return nil
 		}
 
@@ -146,7 +146,7 @@ func startAgentService(platformInfo *platform.PlatformInfo, connectivityManager 
 			return fmt.Errorf("failed to start service: %w", err)
 		}
 
-		fmt.Println("✅ Agent service started successfully")
+		fmt.Println("✅ Node service started successfully")
 		fmt.Printf("Service: %s\n", platform.GetSystemdServiceName())
 
 		// Show how to check status
@@ -157,7 +157,7 @@ func startAgentService(platformInfo *platform.PlatformInfo, connectivityManager 
 	}
 
 	// Use cross-platform process manager for direct process execution
-	logger.Step(3, "Starting agent process (background)")
+	logger.Step(3, "Starting node process (background)")
 	configPath := platformInfo.GetConfigPath()
 
 	fmt.Printf("Starting: %s --config %s\n", binaryPath, configPath)
@@ -165,30 +165,30 @@ func startAgentService(platformInfo *platform.PlatformInfo, connectivityManager 
 	// Create process manager for the current platform
 	procManager := process.NewProcessManager()
 
-	// Start the agent process
+	// Start the node process
 	procInfo, err := procManager.StartProcess(process.ProcessConfig{
 		BinaryPath: binaryPath,
 		Args:       []string{"--config", configPath},
 		Detach:     true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to start agent: %w", err)
+		return fmt.Errorf("failed to start node: %w", err)
 	}
 
-	fmt.Println("✅ Agent started successfully in background")
+	fmt.Println("✅ Node started successfully in background")
 	fmt.Printf("Process PID: %d\n", procInfo.PID)
 
 	return nil
 }
 
-// getAllAgentProcessPIDs returns all PIDs of running FixPanic Agent processes
-func getAllAgentProcessPIDs() ([]int, error) {
+// getAllNodeProcessPIDs returns all PIDs of running OpsSquad Node processes
+func getAllNodeProcessPIDs() ([]int, error) {
 	var pids []int
 
 	// Create process manager for the current platform
 	procManager := process.NewProcessManager()
 
-	// Use ps command to find all fixpanic-connectivity-layer processes
+	// Use ps command to find all opssquad-connectivity-layer processes
 	cmd := exec.Command("ps", "aux")
 	output, err := cmd.Output()
 	if err != nil {
@@ -197,8 +197,8 @@ func getAllAgentProcessPIDs() ([]int, error) {
 
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
-		// Look for fixpanic-connectivity-layer process (exclude grep itself and this process)
-		if strings.Contains(line, "fixpanic-connectivity-layer") {
+		// Look for opssquad-connectivity-layer process (exclude grep itself and this process)
+		if strings.Contains(line, "opssquad-connectivity-layer") {
 			if strings.Contains(line, "grep") || strings.Contains(line, "ps aux") {
 				continue
 			}

@@ -5,19 +5,19 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
 	"gopkg.in/yaml.v3"
 )
 
-// AgentConfig represents the agent configuration
-type AgentConfig struct {
+// NodeConfig represents the node configuration
+type NodeConfig struct {
 	App        AppSection        `yaml:"app"`
 	ReqHandler ReqHandlerSection `yaml:"req_handler"`
 	Logging    LoggingSection    `yaml:"logging"`
 }
 
 type AppSection struct {
-	AgentID               string `yaml:"agent_id"`
+	NodeID                string `yaml:"node_id"`
 	APIKey                string `yaml:"api_key"`
 	TLSEnabled            bool   `yaml:"tls_enabled"`
 	TLSInsecureSkipVerify bool   `yaml:"tls_insecure_skip_verify"`
@@ -38,17 +38,17 @@ type LoggingSection struct {
 
 type DefaultConfigOptions struct {
 	TLSEnabled bool
-	AgentID    string
+	NodeID     string
 	APIKey     string
 }
 
 // DefaultConfig returns a default configuration with TLS enabled
-func DefaultConfig(options DefaultConfigOptions) *AgentConfig {
-	return &AgentConfig{
+func DefaultConfig(options DefaultConfigOptions) *NodeConfig {
+	return &NodeConfig{
 		App: AppSection{
 			TLSEnabled:            options.TLSEnabled, // Enable TLS by default for security
 			TLSInsecureSkipVerify: false,              // Require valid certificates
-			AgentID:               options.AgentID,
+			NodeID:                options.NodeID,
 			APIKey:                options.APIKey,
 		},
 		ReqHandler: ReqHandlerSection{
@@ -68,19 +68,19 @@ func DefaultConfig(options DefaultConfigOptions) *AgentConfig {
 func getLogPath() string {
 	info, err := platform.GetPlatformInfo()
 	if err != nil {
-		return "/var/log/fixpanic/agent.log" // Fallback
+		return "/var/log/opssquad/node.log" // Fallback
 	}
-	return filepath.Join(info.LogDir, "agent.log")
+	return filepath.Join(info.LogDir, "node.log")
 }
 
 // LoadConfig loads configuration from file
-func LoadConfig(path string) (*AgentConfig, error) {
+func LoadConfig(path string) (*NodeConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	var config AgentConfig
+	var config NodeConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
@@ -89,7 +89,7 @@ func LoadConfig(path string) (*AgentConfig, error) {
 }
 
 // SaveConfig saves configuration to file
-func SaveConfig(config *AgentConfig, path string) error {
+func SaveConfig(config *NodeConfig, path string) error {
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -109,26 +109,26 @@ func SaveConfig(config *AgentConfig, path string) error {
 }
 
 // Validate validates the configuration
-func (c *AgentConfig) Validate() error {
-	if c.App.AgentID == "" {
-		return fmt.Errorf("agent ID is required")
+func (c *NodeConfig) Validate() error {
+	if c.App.NodeID == "" {
+		return fmt.Errorf("node ID is required")
 	}
 	if c.App.APIKey == "" {
-		return fmt.Errorf("agent API key is required")
+		return fmt.Errorf("node API key is required")
 	}
 	return nil
 }
 
 // GetConfigPath returns the default config path
 func GetConfigPath() string {
-	return "/etc/fixpanic/agent.yaml"
+	return "/etc/opssquad/node.yaml"
 }
 
 // GetUserConfigPath returns the user-specific config path
 func GetUserConfigPath() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return ".fixpanic.yaml"
+		return ".opssquad.yaml"
 	}
-	return filepath.Join(home, ".fixpanic", "agent.yaml")
+	return filepath.Join(home, ".opssquad", "node.yaml")
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fixpanic/fixpanic-cli/cmd"
+	"github.com/fixpanic/opssquad-cli-tool/cmd"
 )
 
 var (

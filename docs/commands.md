@@ -1,25 +1,25 @@
 # Commands Reference
 
-## `fixpanic agent install`
-Installs and configures a new agent.
+## `opssquad node install`
+Installs and configures a new node.
 
 **Usage:**
 ```bash
-fixpanic agent install --agent-id=<id> --api-key=<key>
+opssquad node install --node-id=<id> --api-key=<key>
 ```
 
 **Flags:**
-- `--agent-id`: (Required) The unique ID for the agent.
+- `--node-id`: (Required) The unique ID for the node.
 - `--api-key`: (Required) The authentication key.
 
 ---
 
-## `fixpanic agent status`
-Checks the current status of the agent service.
+## `opssquad node status`
+Checks the current status of the node service.
 
 **Usage:**
 ```bash
-fixpanic agent status
+opssquad node status
 ```
 
 **Output:**
@@ -29,32 +29,32 @@ fixpanic agent status
 
 ---
 
-## `fixpanic agent start`
-Manually starts the agent process.
+## `opssquad node start`
+Manually starts the node process.
 
 **Usage:**
 ```bash
-fixpanic agent start
+opssquad node start
 ```
 
 ---
 
-## `fixpanic agent stop`
-Manually stops the agent process.
+## `opssquad node stop`
+Manually stops the node process.
 
 **Usage:**
 ```bash
-fixpanic agent stop
+opssquad node stop
 ```
 
 ---
 
-## `fixpanic agent logs`
-Displays the agent's log output.
+## `opssquad node logs`
+Displays the node's log output.
 
 **Usage:**
 ```bash
-fixpanic agent logs [--follow] [--lines=100]
+opssquad node logs [--follow] [--lines=100]
 ```
 
 **Flags:**
@@ -63,22 +63,22 @@ fixpanic agent logs [--follow] [--lines=100]
 
 ---
 
-## `fixpanic agent validate`
+## `opssquad node validate`
 Validates the installation and configuration. Checks for permission issues, missing files, or invalid config.
 
 **Usage:**
 ```bash
-fixpanic agent validate
+opssquad node validate
 ```
 
 ---
 
-## `fixpanic agent uninstall`
-Removes the agent, configuration, and logs.
+## `opssquad node uninstall`
+Removes the node, configuration, and logs.
 
 **Usage:**
 ```bash
-fixpanic agent uninstall [--force]
+opssquad node uninstall [--force]
 ```
 
 **Flags:**
@@ -86,10 +86,10 @@ fixpanic agent uninstall [--force]
 
 ---
 
-## `fixpanic upgrade`
+## `opssquad upgrade`
 Updates the CLI tool to the latest available version.
 
 **Usage:**
 ```bash
-fixpanic upgrade
+opssquad upgrade
 ```

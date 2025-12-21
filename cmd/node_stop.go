@@ -3,19 +3,19 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/fixpanic/fixpanic-cli/internal/logger"
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
-	"github.com/fixpanic/fixpanic-cli/internal/process"
-	"github.com/fixpanic/fixpanic-cli/internal/service"
+	"github.com/fixpanic/opssquad-cli-tool/internal/logger"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/process"
+	"github.com/fixpanic/opssquad-cli-tool/internal/service"
 	"github.com/spf13/cobra"
 )
 
-var agentStopCmd = &cobra.Command{
+var nodeStopCmd = &cobra.Command{
 	Use:   "stop",
-	Short: "Stop the FixPanic Agent",
-	Long:  `Stop the FixPanic Agent service that is running in the background.`,
+	Short: "Stop the OpsSquad Node",
+	Long:  `Stop the OpsSquad Node service that is running in the background.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.Header("Stopping FixPanic Agent")
+		logger.Header("Stopping OpsSquad Node")
 
 		platformInfo, err := platform.GetPlatformInfo()
 		if err != nil {
@@ -43,9 +43,9 @@ var agentStopCmd = &cobra.Command{
 
 		// 2. Always check for direct processes (cleanup/fallback)
 		logger.Step(2, "Checking for background processes")
-		pids, err := getAllAgentProcessPIDs()
+		pids, err := getAllNodeProcessPIDs()
 		if err != nil {
-			return fmt.Errorf("failed to check agent processes: %w", err)
+			return fmt.Errorf("failed to check node processes: %w", err)
 		}
 
 		if len(pids) > 0 {
@@ -69,9 +69,9 @@ var agentStopCmd = &cobra.Command{
 		}
 
 		if !stoppedSomething {
-			fmt.Println("\n⚠️  FixPanic Agent is not running (checked service and background processes)")
+			fmt.Println("\n⚠️  OpsSquad Node is not running (checked service and background processes)")
 		} else {
-			logger.Success("Agent stopped")
+			logger.Success("Node stopped")
 		}
 
 		return nil
@@ -79,5 +79,5 @@ var agentStopCmd = &cobra.Command{
 }
 
 func init() {
-	agentCmd.AddCommand(agentStopCmd)
+	nodeCmd.AddCommand(nodeStopCmd)
 }

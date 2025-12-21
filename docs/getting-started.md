@@ -1,37 +1,37 @@
 # Getting Started
 
-Follow these steps to deploy your first agent.
+Follow these steps to deploy your first node.
 
-## 1. Install an Agent
-To install and register an agent, you need an **Agent ID** and **API Key** from the FixPanic dashboard.
+## 1. Install an Node
+To install and register an node, you need an **Node ID** and **API Key** from the OpsSquad dashboard.
 
 Run the following command:
 
 ```bash
-fixpanic agent install \
-  --agent-id="your-agent-id" \
+opssquad node install \
+  --node-id="your-node-id" \
   --api-key="your-api-key"
 ```
 
 This command will:
-- Register the agent with the FixPanic platform.
+- Register the node with the OpsSquad platform.
 - Create the necessary configuration files.
-- Start the agent service.
+- Start the node service.
 
 ## 2. Check Status
-Verify that your agent is running and connected:
+Verify that your node is running and connected:
 
 ```bash
-fixpanic agent status
+opssquad node status
 ```
 
-You should see output indicating the agent is **Active** and **Connected**.
+You should see output indicating the node is **Active** and **Connected**.
 
 ## 3. View Logs
-To monitor the agent's activity in real-time:
+To monitor the node's activity in real-time:
 
 ```bash
-fixpanic agent logs --follow
+opssquad node logs --follow
 ```
 
-This is useful for verifying that the agent is receiving tasks and executing them correctly.
+This is useful for verifying that the node is receiving tasks and executing them correctly.

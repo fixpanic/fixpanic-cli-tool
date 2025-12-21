@@ -5,43 +5,43 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/fixpanic/fixpanic-cli/internal/platform"
-	"github.com/fixpanic/fixpanic-cli/internal/service"
+	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
+	"github.com/fixpanic/opssquad-cli-tool/internal/service"
 	"github.com/spf13/cobra"
 )
 
 var logLines int
 var followLogs bool
 
-// agentLogsCmd represents the agent logs command
-var agentLogsCmd = &cobra.Command{
+// nodeLogsCmd represents the node logs command
+var nodeLogsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "View Fixpanic agent logs",
-	Long: `View the logs of the Fixpanic agent.
+	Short: "View OpsSquad node logs",
+	Long: `View the logs of the OpsSquad node.
 	
-This command shows the agent logs from systemd journal or from the log file
+This command shows the node logs from systemd journal or from the log file
 if systemd is not available.`,
 	Example: `  # View last 50 lines of logs
-  fixpanic agent logs
+  opssquad node logs
   
   # View last 100 lines of logs
-  fixpanic agent logs --lines=100
+  opssquad node logs --lines=100
   
   # Follow logs in real-time
-  fixpanic agent logs --follow`,
-	RunE: runAgentLogs,
+  opssquad node logs --follow`,
+	RunE: runNodeLogs,
 }
 
 func init() {
-	agentCmd.AddCommand(agentLogsCmd)
+	nodeCmd.AddCommand(nodeLogsCmd)
 
 	// Add flags
-	agentLogsCmd.Flags().IntVarP(&logLines, "lines", "n", 50, "Number of log lines to show")
-	agentLogsCmd.Flags().BoolVarP(&followLogs, "follow", "f", false, "Follow log output in real-time")
+	nodeLogsCmd.Flags().IntVarP(&logLines, "lines", "n", 50, "Number of log lines to show")
+	nodeLogsCmd.Flags().BoolVarP(&followLogs, "follow", "f", false, "Follow log output in real-time")
 }
 
-func runAgentLogs(cmd *cobra.Command, args []string) error {
-	fmt.Println("Fetching Fixpanic agent logs...")
+func runNodeLogs(cmd *cobra.Command, args []string) error {
+	fmt.Println("Fetching OpsSquad node logs...")
 
 	// Get platform information
 	platformInfo, err := platform.GetPlatformInfo()
@@ -55,7 +55,7 @@ func runAgentLogs(cmd *cobra.Command, args []string) error {
 
 		if followLogs {
 			// Follow logs in real-time
-			fmt.Println("Following agent logs (press Ctrl+C to stop)...")
+			fmt.Println("Following node logs (press Ctrl+C to stop)...")
 			return followSystemdLogs(platform.GetSystemdServiceName())
 		} else {
 			// Get static logs
@@ -67,7 +67,7 @@ func runAgentLogs(cmd *cobra.Command, args []string) error {
 			}
 
 			if logs == "" {
-				fmt.Println("No logs found for the agent service.")
+				fmt.Println("No logs found for the node service.")
 			} else {
 				fmt.Println(logs)
 			}
@@ -95,12 +95,12 @@ func followSystemdLogs(serviceName string) error {
 }
 
 func readLogFile(platformInfo *platform.PlatformInfo, lines int) error {
-	logPath := fmt.Sprintf("%s/agent.log", platformInfo.LogDir)
+	logPath := fmt.Sprintf("%s/node.log", platformInfo.LogDir)
 
 	// Check if log file exists
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
 		fmt.Printf("No log file found at: %s\n", logPath)
-		fmt.Println("The agent might not have been started yet, or logging might be disabled.")
+		fmt.Println("The node might not have been started yet, or logging might be disabled.")
 		return nil
 	}
 

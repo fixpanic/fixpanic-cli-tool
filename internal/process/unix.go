@@ -128,7 +128,7 @@ func NewUnixServiceManager(serviceName string) *UnixServiceManager {
 	}
 }
 
-// InstallService installs the agent as a systemd service
+// InstallService installs the node as a systemd service
 func (u *UnixServiceManager) InstallService(binaryPath, configPath string) error {
 	// Generate systemd service file content
 	serviceContent := u.generateServiceContent(binaryPath, configPath)
@@ -232,7 +232,7 @@ func (u *UnixServiceManager) getServicePath() string {
 // generateServiceContent generates the systemd service file content
 func (u *UnixServiceManager) generateServiceContent(binaryPath, configPath string) string {
 	return fmt.Sprintf(`[Unit]
-Description=FixPanic Agent - TCP socket connectivity layer for secure command execution
+Description=OpsSquad Node - TCP socket connectivity layer for secure command execution
 After=network.target
 
 [Service]

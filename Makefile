@@ -1,7 +1,7 @@
-# Fixpanic CLI Makefile
+# OpsSquad CLI Makefile
 
 # Variables
-BINARY_NAME=fixpanic
+BINARY_NAME=opssquad
 VERSION?=dev
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -156,23 +156,23 @@ uninstall:
 .PHONY: docker-build
 docker-build:
 	@echo "Building Docker image..."
-	docker build -t fixpanic/$(BINARY_NAME):$(VERSION) \
+	docker build -t opssquad/$(BINARY_NAME):$(VERSION) \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg DATE=$(DATE) \
 		.
-	@echo "Docker image built: fixpanic/$(BINARY_NAME):$(VERSION)"
+	@echo "Docker image built: opssquad/$(BINARY_NAME):$(VERSION)"
 
 # Docker run
 .PHONY: docker-run
 docker-run: docker-build
 	@echo "Running Docker container..."
-	docker run --rm -it fixpanic/$(BINARY_NAME):$(VERSION)
+	docker run --rm -it opssquad/$(BINARY_NAME):$(VERSION)
 
 # Help
 .PHONY: help
 help:
-	@echo "Fixpanic CLI Makefile"
+	@echo "OpsSquad CLI Makefile"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  make build         - Build for current platform"

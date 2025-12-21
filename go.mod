@@ -1,4 +1,4 @@
-module github.com/fixpanic/fixpanic-cli
+module github.com/fixpanic/opssquad-cli-tool
 
 go 1.21
 
