@@ -23,7 +23,7 @@ The `node.yaml` file controls the node's behavior. It is automatically generated
 ```yaml
 app:
   node_id: "your-node-id"
-  api_key: "your-api-key"
+  token: "your-token"
 
 logging:
   level: "info"
@@ -35,6 +35,6 @@ logging:
 | Parameter | Description |
 |-----------|-------------|
 | `app.node_id` | The unique identifier for this node (provided by dashboard). |
-| `app.api_key` | The authentication key for communicating with the platform. |
+| `app.token` | The authentication key for communicating with the platform. |
 | `logging.level` | Log verbosity. Options: `debug`, `info`, `warn`, `error`. Default: `info`. |
 | `logging.file` | Absolute path to the log file. |

@@ -3,14 +3,14 @@
 Follow these steps to deploy your first node.
 
 ## 1. Install an Node
-To install and register an node, you need an **Node ID** and **API Key** from the OpsSquad dashboard.
+To install and register an node, you need an **Node ID** and **Token** from the OpsSquad dashboard.
 
 Run the following command:
 
 ```bash
 opssquad node install \
   --node-id="your-node-id" \
-  --api-key="your-api-key"
+  --token="your-token"
 ```
 
 This command will:

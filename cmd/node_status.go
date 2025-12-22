@@ -122,7 +122,7 @@ func runNodeStatus(cmd *cobra.Command, args []string) error {
 		logger.Error("Node is not installed")
 		logger.Separator()
 		logger.Info("To install the node, run:")
-		logger.Command("opssquad node install --node-id=<your-node-id> --api-key=<your-api-key>")
+		logger.Command("opssquad node install --node-id=<your-node-id> --token=<your-token>")
 		return nil
 	}
 

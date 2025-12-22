@@ -18,7 +18,7 @@ type NodeConfig struct {
 
 type AppSection struct {
 	NodeID                string `yaml:"node_id"`
-	APIKey                string `yaml:"api_key"`
+	Token                 string `yaml:"token"`
 	TLSEnabled            bool   `yaml:"tls_enabled"`
 	TLSInsecureSkipVerify bool   `yaml:"tls_insecure_skip_verify"`
 }
@@ -39,7 +39,7 @@ type LoggingSection struct {
 type DefaultConfigOptions struct {
 	TLSEnabled bool
 	NodeID     string
-	APIKey     string
+	Token      string
 }
 
 // DefaultConfig returns a default configuration with TLS enabled
@@ -49,7 +49,7 @@ func DefaultConfig(options DefaultConfigOptions) *NodeConfig {
 			TLSEnabled:            options.TLSEnabled, // Enable TLS by default for security
 			TLSInsecureSkipVerify: false,              // Require valid certificates
 			NodeID:                options.NodeID,
-			APIKey:                options.APIKey,
+			Token:                 options.Token,
 		},
 		ReqHandler: ReqHandlerSection{
 			MaxConcurrentConnections: 10,
@@ -113,8 +113,8 @@ func (c *NodeConfig) Validate() error {
 	if c.App.NodeID == "" {
 		return fmt.Errorf("node ID is required")
 	}
-	if c.App.APIKey == "" {
-		return fmt.Errorf("node API key is required")
+	if c.App.Token == "" {
+		return fmt.Errorf("node token is required")
 	}
 	return nil
 }

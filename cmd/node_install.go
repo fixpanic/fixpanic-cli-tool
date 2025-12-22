@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	nodeID      string
-	nodeAPIKey  string
+	nodeID       string
+	nodeToken    string
 	forceInstall bool
 )
 
@@ -27,10 +27,10 @@ This command downloads and installs the connectivity layer binary, creates the
 necessary configuration files, and sets up the systemd service for automatic
 startup.`,
 	Example: `  # Install with node credentials
-	 opssquad node install --node-id="node_123" --api-key="fp_abc123xyz"
+	 opssquad node install --node-id="node_123" --token="fp_abc123xyz"
 
 	 # Force reinstall
-	 opssquad node install --node-id="node_123" --api-key="fp_abc123xyz" --force`,
+	 opssquad node install --node-id="node_123" --token="fp_abc123xyz" --force`,
 	RunE: runNodeInstall,
 }
 
@@ -39,12 +39,12 @@ func init() {
 
 	// Add flags
 	nodeInstallCmd.Flags().StringVar(&nodeID, "node-id", "", "Node ID from OpsSquad dashboard (required)")
-	nodeInstallCmd.Flags().StringVar(&nodeAPIKey, "api-key", "", "Node API key from OpsSquad dashboard (required)")
+	nodeInstallCmd.Flags().StringVar(&nodeToken, "token", "", "Node token from OpsSquad dashboard (required)")
 	nodeInstallCmd.Flags().BoolVar(&forceInstall, "force", false, "Force reinstall even if node is already installed")
 
 	// Mark required flags
 	nodeInstallCmd.MarkFlagRequired("node-id")
-	nodeInstallCmd.MarkFlagRequired("api-key")
+	nodeInstallCmd.MarkFlagRequired("token")
 }
 
 func runNodeInstall(cmd *cobra.Command, args []string) error {
@@ -88,8 +88,8 @@ func runNodeInstall(cmd *cobra.Command, args []string) error {
 	// default config with TLS enabled
 	nodeConfig := config.DefaultConfig(config.DefaultConfigOptions{
 		TLSEnabled: true, // TLS Enable by default for security
-		NodeID:    nodeID,
-		APIKey:     nodeAPIKey,
+		NodeID:     nodeID,
+		Token:      nodeToken,
 	})
 
 	// Validate configuration
