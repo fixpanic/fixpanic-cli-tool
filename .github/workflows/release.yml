@@ -59,7 +59,7 @@ jobs:
             GOOS=${platform_split[0]}
             GOARCH=${platform_split[1]}
             
-            output_name="fixpanic-${GOOS}-${GOARCH}"
+            output_name="opssquad-${GOOS}-${GOARCH}"
             if [ "$GOOS" = "windows" ]; then
               output_name="${output_name}.exe"
             fi
@@ -105,16 +105,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ needs.build.outputs.version }}
-          release_name: Fixpanic CLI ${{ needs.build.outputs.version }}
+          release_name: OpsSquad CLI ${{ needs.build.outputs.version }}
           body: |
-            ## Fixpanic CLI ${{ needs.build.outputs.version }}
+            ## OpsSquad CLI ${{ needs.build.outputs.version }}
             
             ### Installation
             Download the appropriate binary for your platform and extract it to your PATH.
             
             ### Quick Install
             ```bash
-            curl -fsSL https://install.fixpanic.com/install.sh | bash
+            ```bash
+            curl -fsSL https://install.opssquad.com/install.sh | bash
             ```
             
             ### Manual Installation
