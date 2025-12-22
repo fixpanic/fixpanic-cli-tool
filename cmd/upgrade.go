@@ -400,6 +400,13 @@ func verifyNewBinary(binaryPath string) error {
 
 // replaceBinary safely replaces the current binary with the new one
 func replaceBinary(currentPath, newPath string) error {
+	// Check if this is a migration (fixpanic -> opssquad)
+	currentBase := filepath.Base(currentPath)
+	if currentBase == "fixpanic" || currentBase == "fixpanic.exe" {
+		return migrateBinary(currentPath, newPath)
+	}
+
+	// Standard upgrade (same binary name)
 	// On Unix systems, we can use os.Rename to atomically replace a running binary
 	// The running process continues with the old inode, but new executions use the new binary
 
@@ -450,6 +457,43 @@ func replaceBinary(currentPath, newPath string) error {
 	return nil
 }
 
+// migrateBinary handles the migration from fixpanic to opssquad
+func migrateBinary(currentPath, newPath string) error {
+	dir := filepath.Dir(currentPath)
+	targetName := "opssquad"
+	if runtime.GOOS == "windows" {
+		targetName += ".exe"
+	}
+	targetPath := filepath.Join(dir, targetName)
+
+	logger.Info("Migrating from '%s' to '%s'", filepath.Base(currentPath), targetName)
+
+	// Move new binary to target location (opssquad)
+	logger.Progress("Installing new binary to %s", targetPath)
+	if err := os.Rename(newPath, targetPath); err != nil {
+		return fmt.Errorf("failed to install new binary: %w", err)
+	}
+
+	// Make sure new binary is executable
+	if err := os.Chmod(targetPath, 0755); err != nil {
+		logger.Warning("Failed to set executable permissions: %v", err)
+	}
+
+	// Remove old binary (fixpanic)
+	// Note: We can remove the running binary on Unix
+	logger.Progress("Removing old binary (%s)", filepath.Base(currentPath))
+	if err := os.Remove(currentPath); err != nil {
+		logger.Warning("Failed to remove old binary: %v", err)
+		logger.Info("You may need to manually remove: %s", currentPath)
+	}
+
+	logger.Success("Migration completed successfully!")
+	logger.Warning("NOTE: The 'fixpanic' command has been removed.")
+	logger.Warning("Please use 'opssquad' for future commands.")
+
+	return nil
+}
+
 // copyFile copies a file from src to dst
 func copyFile(src, dst string) error {
 	sourceFile, err := os.Open(src)
@@ -470,6 +514,17 @@ func copyFile(src, dst string) error {
 
 // verifyUpgrade checks that the upgrade was successful
 func verifyUpgrade(binaryPath, expectedVersion string) error {
+	// If we migrated from fixpanic, the new binary is opssquad
+	base := filepath.Base(binaryPath)
+	if base == "fixpanic" || base == "fixpanic.exe" {
+		dir := filepath.Dir(binaryPath)
+		targetName := "opssquad"
+		if runtime.GOOS == "windows" {
+			targetName += ".exe"
+		}
+		binaryPath = filepath.Join(dir, targetName)
+	}
+
 	// We can't easily verify the version without running the binary
 	// since we're inside the same process. This would be better implemented
 	// as a separate verification step or by comparing file hashes.
