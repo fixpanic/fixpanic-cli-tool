@@ -117,12 +117,12 @@ opssquad node install --help
 ### Download Binary
 ```bash
 # Linux (amd64)
-curl -LO https://github.com/opssquad/opssquad-cli-tool/releases/latest/download/opssquad-linux-amd64.tar.gz
+curl -LO https://github.com/fixpanic/opssquad-cli-tool/releases/latest/download/opssquad-linux-amd64.tar.gz
 tar -xzf opssquad-linux-amd64.tar.gz
 sudo mv opssquad /usr/local/bin/
 
 # macOS (arm64)
-curl -LO https://github.com/opssquad/opssquad-cli-tool/releases/latest/download/opssquad-darwin-arm64.tar.gz
+curl -LO https://github.com/fixpanic/opssquad-cli-tool/releases/latest/download/opssquad-darwin-arm64.tar.gz
 tar -xzf opssquad-darwin-arm64.tar.gz
 sudo mv opssquad /usr/local/bin/
 
@@ -132,7 +132,7 @@ opssquad --version
 
 ### Build from Source
 ```bash
-git clone https://github.com/opssquad/opssquad-cli-tool.git
+git clone https://github.com/fixpanic/opssquad-cli-tool.git
 cd opssquad-cli-tool
 go build -o opssquad
 sudo mv opssquad /usr/local/bin/
@@ -202,7 +202,7 @@ opssquad node install --node-id=<id> --api-key=<key>
 
 - 📧 **Email**: [support@opssquad.com](mailto:support@opssquad.com)
 - 📖 **Docs**: [docs.opssquad.com](https://docs.opssquad.com)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/opssquad/opssquad-cli-tool/issues)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/fixpanic/opssquad-cli-tool/issues)
 - 💬 **Community**: [Discord](https://discord.gg/opssquad)
 
 ---
@@ -215,6 +215,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
-**[Get Started Now](https://install.opssquad.com) • [Documentation](https://docs.opssquad.com) • [GitHub](https://github.com/opssquad/opssquad-cli-tool)**
+**[Get Started Now](https://install.opssquad.com) • [Documentation](https://docs.opssquad.com) • [GitHub](https://github.com/fixpanic/opssquad-cli-tool)**
 
 </div>

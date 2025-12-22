@@ -68,7 +68,7 @@ func validateNodeInstall(platformInfo *platform.PlatformInfo) (*connectivity.Man
 	logger.Step(1, "Checking node installation")
 	connectivityManager := connectivity.NewManager(platformInfo)
 
-	if !connectivityManager.IsOpsSquadNodeInstalled() {
+	if !connectivityManager.IsBinaryInstalled() {
 		return nil, fmt.Errorf("OpsSquad Node not installed. Run 'opssquad node install' first")
 	}
 

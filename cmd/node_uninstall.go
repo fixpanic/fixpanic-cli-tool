@@ -47,7 +47,7 @@ func runNodeUninstall(cmd *cobra.Command, args []string) error {
 
 	// Check if OpsSquad Node is installed
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsOpsSquadNodeInstalled() {
+	if !connectivityManager.IsBinaryInstalled() {
 		fmt.Println("ℹ️  OpsSquad Node is not installed")
 		return nil
 	}
@@ -93,7 +93,7 @@ func runNodeUninstall(cmd *cobra.Command, args []string) error {
 
 	// Remove OpsSquad Node binary
 	fmt.Println("Removing OpsSquad Node binary...")
-	if err := connectivityManager.RemoveOpsSquadNode(); err != nil {
+	if err := connectivityManager.RemoveBinary(); err != nil {
 		fmt.Printf("Warning: failed to remove binary: %v\n", err)
 	}
 

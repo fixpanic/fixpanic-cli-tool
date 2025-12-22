@@ -118,7 +118,7 @@ func runNodeStatus(cmd *cobra.Command, args []string) error {
 
 	// Check if connectivity layer is installed
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsOpsSquadNodeInstalled() {
+	if !connectivityManager.IsBinaryInstalled() {
 		logger.Error("Node is not installed")
 		logger.Separator()
 		logger.Info("To install the node, run:")
@@ -129,7 +129,7 @@ func runNodeStatus(cmd *cobra.Command, args []string) error {
 	logger.Success("Node is installed")
 
 	// Get OpsSquad Node version
-	version, err := connectivityManager.GetOpsSquadNodeVersion()
+	version, err := connectivityManager.GetBinaryVersion()
 	if err != nil {
 		logger.Warning("Could not determine OpsSquad Node version: %v", err)
 	} else {
@@ -213,7 +213,7 @@ func runNodeStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check binary location
-	binaryPath := platformInfo.GetOpsSquadNodeBinaryPath()
+	binaryPath := platformInfo.GetBinaryPath()
 	if _, err := os.Stat(binaryPath); err == nil {
 		fmt.Printf("📍 Binary location: %s\n", binaryPath)
 	}

@@ -29,5 +29,5 @@ The node requires a persistent connection to the OpsSquad platform.
 If you cannot resolve the issue, please contact us:
 - 📧 **Email**: [support@opssquad.com](mailto:support@opssquad.com)
 - 📖 **Documentation**: [docs.opssquad.com](https://docs.opssquad.com)
-- 🐛 **GitHub Issues**: [opssquad-cli-tool/issues](https://github.com/opssquad/opssquad-cli-tool/issues)
+- 🐛 **GitHub Issues**: [opssquad-cli-tool/issues](https://github.com/fixpanic/opssquad-cli-tool/issues)
 - 💬 **Discord Community**: [Join Discord](https://discord.gg/opssquad)

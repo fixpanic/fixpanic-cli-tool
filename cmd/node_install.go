@@ -73,7 +73,7 @@ func runNodeInstall(cmd *cobra.Command, args []string) error {
 	// Check if OpsSquad Node is already installed
 	logger.Step(2, "Checking for existing installation")
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if connectivityManager.IsOpsSquadNodeInstalled() && !forceInstall {
+	if connectivityManager.IsBinaryInstalled() && !forceInstall {
 		return fmt.Errorf("OpsSquad Node is already installed. Use --force to reinstall")
 	}
 
@@ -144,7 +144,7 @@ func runNodeInstall(cmd *cobra.Command, args []string) error {
 	logger.Separator()
 
 	logger.KeyValue("Node ID", nodeID)
-	logger.KeyValue("Binary location", platformInfo.GetOpsSquadNodeBinaryPath())
+	logger.KeyValue("Binary location", platformInfo.GetBinaryPath())
 	logger.KeyValue("Config location", configPath)
 
 	if platform.IsSystemdAvailable() {

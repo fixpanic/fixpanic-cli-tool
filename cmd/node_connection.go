@@ -38,7 +38,7 @@ func runNodeConnection(cmd *cobra.Command, args []string) error {
 
 	// Check if connectivity layer is installed
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsOpsSquadNodeInstalled() {
+	if !connectivityManager.IsBinaryInstalled() {
 		return fmt.Errorf("node is not installed. Run 'opssquad node install' first")
 	}
 

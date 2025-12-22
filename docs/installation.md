@@ -21,14 +21,14 @@ If you prefer to install manually, you can download the binaries directly or bui
 
 ### Linux (amd64)
 ```bash
-curl -LO https://github.com/opssquad/opssquad-cli-tool/releases/latest/download/opssquad-linux-amd64.tar.gz
+curl -LO https://github.com/fixpanic/opssquad-cli-tool/releases/latest/download/opssquad-linux-amd64.tar.gz
 tar -xzf opssquad-linux-amd64.tar.gz
 sudo mv opssquad /usr/local/bin/
 ```
 
 ### macOS (arm64 / Apple Silicon)
 ```bash
-curl -LO https://github.com/opssquad/opssquad-cli-tool/releases/latest/download/opssquad-darwin-arm64.tar.gz
+curl -LO https://github.com/fixpanic/opssquad-cli-tool/releases/latest/download/opssquad-darwin-arm64.tar.gz
 tar -xzf opssquad-darwin-arm64.tar.gz
 sudo mv opssquad /usr/local/bin/
 ```
@@ -40,7 +40,7 @@ sudo mv opssquad /usr/local/bin/
 **Prerequisites:** Go 1.21 or later.
 
 ```bash
-git clone https://github.com/opssquad/opssquad-cli-tool.git
+git clone https://github.com/fixpanic/opssquad-cli-tool.git
 cd opssquad-cli-tool
 go build -o opssquad
 sudo mv opssquad /usr/local/bin/

@@ -59,8 +59,8 @@ func GetPlatformInfo() (*PlatformInfo, error) {
 	}, nil
 }
 
-// GetOpsSquadNodeBinaryName returns the correct binary name for OpsSquad Node
-func GetOpsSquadNodeBinaryName() string {
+// GetBinaryName returns the correct binary name for OpsSquad Node
+func GetBinaryName() string {
 	if runtime.GOOS == "windows" {
 		return "opssquad-connectivity-layer.exe"
 	}
@@ -68,19 +68,25 @@ func GetOpsSquadNodeBinaryName() string {
 }
 
 // GetConnectivityBinaryName returns the connectivity binary name for the current platform (DEPRECATED)
-// TODO: Remove this function after migration to GetOpsSquadNodeBinaryName
+// TODO: Remove this function after migration to GetBinaryName
 func GetConnectivityBinaryName() string {
-	fmt.Println("WARNING: GetConnectivityBinaryName is deprecated, use GetOpsSquadNodeBinaryName instead")
-	return GetOpsSquadNodeBinaryName()
+	fmt.Println("WARNING: GetConnectivityBinaryName is deprecated, use GetBinaryName instead")
+	return GetBinaryName()
 }
 
-// GetOpsSquadNodeBinaryPath returns the path to the OpsSquad Node binary
+// GetBinaryPath returns the full path to the connectivity binary
+func (p *PlatformInfo) GetBinaryPath() string {
+	return fmt.Sprintf("%s/%s", p.LibDir, GetBinaryName())
+}
+
+// GetOpsSquadNodeBinaryPath returns the path to the OpsSquad Node binary (DEPRECATED)
+// TODO: Remove this function after migration to GetBinaryPath
 func (p *PlatformInfo) GetOpsSquadNodeBinaryPath() string {
-	return fmt.Sprintf("%s/%s", p.LibDir, GetOpsSquadNodeBinaryName())
+	return p.GetBinaryPath()
 }
 
-// GetOpsSquadNodePlatformInfo returns normalized platform info matching task requirements
-func GetOpsSquadNodePlatformInfo() (os, arch string, err error) {
+// GetNodePlatformInfo returns normalized platform info matching task requirements
+func GetNodePlatformInfo() (os, arch string, err error) {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
 
@@ -113,15 +119,15 @@ func GetOpsSquadNodePlatformInfo() (os, arch string, err error) {
 	return os, arch, nil
 }
 
-// GetOpsSquadNodeDownloadURL returns the correct GitHub Releases URL
-func GetOpsSquadNodeDownloadURL(version string) (string, error) {
-	os, arch, err := GetOpsSquadNodePlatformInfo()
+// GetBinaryDownloadURL returns the correct GitHub Releases URL
+func GetBinaryDownloadURL(version string) (string, error) {
+	os, arch, err := GetNodePlatformInfo()
 	if err != nil {
 		return "", fmt.Errorf("failed to get platform info: %w", err)
 	}
 
 	// Construct URL as per task prompt requirements
-	baseURL := "https://github.com/opssquad/opssquad-connectivity-layer-release/releases"
+	baseURL := "https://github.com/fixpanic/opssquad-connectivity-layer-release/releases"
 
 	if version == "latest" {
 		return fmt.Sprintf("%s/latest/download/opssquad-connectivity-layer-%s-%s", baseURL, os, arch), nil
@@ -131,10 +137,10 @@ func GetOpsSquadNodeDownloadURL(version string) (string, error) {
 }
 
 // GetConnectivityDownloadURL returns the download URL for the connectivity binary (DEPRECATED)
-// TODO: Remove this function after migration to GetOpsSquadNodeDownloadURL
+// TODO: Remove this function after migration to GetBinaryDownloadURL
 func GetConnectivityDownloadURL(version string) string {
-	fmt.Println("WARNING: GetConnectivityDownloadURL is deprecated, use GetOpsSquadNodeDownloadURL instead")
-	url, err := GetOpsSquadNodeDownloadURL(version)
+	fmt.Println("WARNING: GetConnectivityDownloadURL is deprecated, use GetBinaryDownloadURL instead")
+	url, err := GetBinaryDownloadURL(version)
 	if err != nil {
 		// For backward compatibility, return empty string on error
 		fmt.Printf("Error getting download URL: %v\n", err)
@@ -177,11 +183,6 @@ func (p *PlatformInfo) CreateDirectories() error {
 	}
 
 	return nil
-}
-
-// GetBinaryPath returns the full path to the connectivity binary
-func (p *PlatformInfo) GetBinaryPath() string {
-	return fmt.Sprintf("%s/%s", p.LibDir, GetOpsSquadNodeBinaryName())
 }
 
 // GetConfigPath returns the full path to the node config file

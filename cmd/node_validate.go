@@ -41,7 +41,7 @@ func runNodeValidate(cmd *cobra.Command, args []string) error {
 	// Check if OpsSquad Node is installed
 	logger.Step(2, "Checking node binary installation")
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsOpsSquadNodeInstalled() {
+	if !connectivityManager.IsBinaryInstalled() {
 		return fmt.Errorf("OpsSquad Node is not installed. Run 'opssquad node install' first")
 	}
 
@@ -74,7 +74,7 @@ func runNodeValidate(cmd *cobra.Command, args []string) error {
 
 	// Test version command
 	fmt.Println("\nTesting OpsSquad Node binary...")
-	version, err := connectivityManager.GetOpsSquadNodeVersion()
+	version, err := connectivityManager.GetBinaryVersion()
 	if err != nil {
 		fmt.Printf("⚠️  Could not get OpsSquad Node version: %v\n", err)
 	} else {

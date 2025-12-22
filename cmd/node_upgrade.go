@@ -48,13 +48,13 @@ func runNodeUpgrade(cmd *cobra.Command, args []string) error {
 	// Check if OpsSquad Node is installed
 	logger.Step(2, "Checking node installation")
 	connectivityManager := connectivity.NewManager(platformInfo)
-	if !connectivityManager.IsOpsSquadNodeInstalled() {
+	if !connectivityManager.IsBinaryInstalled() {
 		return fmt.Errorf("OpsSquad Node is not installed. Run 'opssquad node install' first")
 	}
 
 	// Get current version
 	logger.Progress("Checking current node version")
-	currentVersion, err := connectivityManager.GetOpsSquadNodeVersion()
+	currentVersion, err := connectivityManager.GetBinaryVersion()
 	if err != nil {
 		logger.Warning("Could not determine current version: %v", err)
 		currentVersion = "unknown"
@@ -99,7 +99,7 @@ func runNodeUpgrade(cmd *cobra.Command, args []string) error {
 
 	// Get new version
 	logger.Progress("Verifying upgrade")
-	newVersion, err := connectivityManager.GetOpsSquadNodeVersion()
+	newVersion, err := connectivityManager.GetBinaryVersion()
 	if err != nil {
 		logger.Warning("Could not determine new version: %v", err)
 		newVersion = "unknown"
@@ -132,7 +132,7 @@ func runNodeUpgrade(cmd *cobra.Command, args []string) error {
 	}
 
 	logger.Separator()
-	logger.KeyValue("Binary location", platformInfo.GetOpsSquadNodeBinaryPath())
+	logger.KeyValue("Binary location", platformInfo.GetBinaryPath())
 
 	if !nodeWasRunning {
 		logger.Info("Node was not running before upgrade")

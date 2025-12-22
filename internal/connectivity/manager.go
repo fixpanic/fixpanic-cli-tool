@@ -32,7 +32,12 @@ func NewManager(platform *platform.PlatformInfo) *Manager {
 
 // Download downloads the connectivity layer binary
 func (m *Manager) Download(version string) error {
-	url, err := platform.GetOpsSquadNodeDownloadURL(version)
+	return m.DownloadBinary(version)
+}
+
+// DownloadBinary downloads the OpsSquad Node binary from GitHub Releases
+func (m *Manager) DownloadBinary(version string) error {
+	url, err := platform.GetBinaryDownloadURL(version)
 	if err != nil {
 		return fmt.Errorf("failed to get download URL: %w", err)
 	}
@@ -86,6 +91,14 @@ func (m *Manager) Download(version string) error {
 		return fmt.Errorf("failed to make binary executable: %w", err)
 	}
 
+	// On macOS, remove quarantine attribute to allow execution
+	if runtime.GOOS == "darwin" {
+		if err := exec.Command("xattr", "-d", "com.apple.quarantine", tmpFile).Run(); err != nil {
+			// Log warning but don't fail - quarantine removal is not critical
+			logger.Warning("Failed to remove quarantine attribute: %v", err)
+		}
+	}
+
 	// Move to final location
 	if err := os.Rename(tmpFile, binaryPath); err != nil {
 		os.Remove(tmpFile)
@@ -97,24 +110,24 @@ func (m *Manager) Download(version string) error {
 }
 
 // IsInstalled checks if the connectivity layer is installed (DEPRECATED)
-// TODO: Remove this function after migration to IsOpsSquadNodeInstalled
+// TODO: Remove this function after migration to IsBinaryInstalled
 func (m *Manager) IsInstalled() bool {
-	fmt.Println("WARNING: IsInstalled() is deprecated, use IsOpsSquadNodeInstalled() instead")
-	return m.IsOpsSquadNodeInstalled()
+	fmt.Println("WARNING: IsInstalled() is deprecated, use IsBinaryInstalled() instead")
+	return m.IsBinaryInstalled()
 }
 
 // GetVersion returns the version of the installed connectivity layer (DEPRECATED)
-// TODO: Remove this function after migration to GetOpsSquadNodeVersion
+// TODO: Remove this function after migration to GetBinaryVersion
 func (m *Manager) GetVersion() (string, error) {
-	fmt.Println("WARNING: GetVersion() is deprecated, use GetOpsSquadNodeVersion() instead")
-	return m.GetOpsSquadNodeVersion()
+	fmt.Println("WARNING: GetVersion() is deprecated, use GetBinaryVersion() instead")
+	return m.GetBinaryVersion()
 }
 
 // Remove removes the connectivity layer binary (DEPRECATED)
-// TODO: Remove this function after migration to RemoveOpsSquadNode
+// TODO: Remove this function after migration to RemoveBinary
 func (m *Manager) Remove() error {
-	fmt.Println("WARNING: Remove() is deprecated, use RemoveOpsSquadNode() instead")
-	return m.RemoveOpsSquadNode()
+	fmt.Println("WARNING: Remove() is deprecated, use RemoveBinary() instead")
+	return m.RemoveBinary()
 }
 
 // VerifyChecksum verifies the binary checksum
@@ -145,97 +158,20 @@ func (m *Manager) GetBinaryPath() string {
 	return m.platform.GetBinaryPath()
 }
 
-// DownloadOpsSquadNode downloads the OpsSquad Node binary from GitHub Releases
-func (m *Manager) DownloadOpsSquadNode(version string) error {
-	downloadURL, err := platform.GetOpsSquadNodeDownloadURL(version)
-	if err != nil {
-		return fmt.Errorf("failed to get download URL: %w", err)
-	}
 
-	binaryPath := m.platform.GetOpsSquadNodeBinaryPath()
 
-	logger.Loading("Downloading from %s...", downloadURL)
-
-	// Create temporary file
-	tmpFile := binaryPath + ".tmp"
-
-	resp, err := m.client.Get(downloadURL)
-	if err != nil {
-		logger.LoadingFailed("Failed to download")
-		return fmt.Errorf("failed to download binary: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		logger.LoadingFailed("HTTP %d", resp.StatusCode)
-		return fmt.Errorf("failed to download binary: HTTP %d", resp.StatusCode)
-	}
-
-	logger.LoadingDone("Download started")
-
-	// Create the file
-	out, err := os.Create(tmpFile)
-	if err != nil {
-		return fmt.Errorf("failed to create temporary file: %w", err)
-	}
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		out.Close()
-		os.Remove(tmpFile)
-		return fmt.Errorf("failed to save binary: %w", err)
-	}
-
-	// Sync to ensure all data is written to disk before closing
-	if err := out.Sync(); err != nil {
-		out.Close()
-		os.Remove(tmpFile)
-		return fmt.Errorf("failed to sync file to disk: %w", err)
-	}
-
-	// Close the file before chmod and rename
-	if err := out.Close(); err != nil {
-		os.Remove(tmpFile)
-		return fmt.Errorf("failed to close file: %w", err)
-	}
-
-	// Make the binary executable
-	if err := os.Chmod(tmpFile, 0755); err != nil {
-		os.Remove(tmpFile)
-		return fmt.Errorf("failed to make binary executable: %w", err)
-	}
-
-	// On macOS, remove quarantine attribute to allow execution
-	if runtime.GOOS == "darwin" {
-		if err := exec.Command("xattr", "-d", "com.apple.quarantine", tmpFile).Run(); err != nil {
-			// Log warning but don't fail - quarantine removal is not critical
-			logger.Warning("Failed to remove quarantine attribute: %v", err)
-		}
-	}
-
-	// Move to final location
-	if err := os.Rename(tmpFile, binaryPath); err != nil {
-		os.Remove(tmpFile)
-		return fmt.Errorf("failed to move binary to final location: %w", err)
-	}
-
-	logger.Success("OpsSquad Node downloaded to %s", binaryPath)
-	return nil
-}
-
-// IsOpsSquadNodeInstalled checks if the OpsSquad Node is installed
-func (m *Manager) IsOpsSquadNodeInstalled() bool {
-	binaryPath := m.platform.GetOpsSquadNodeBinaryPath()
+// IsBinaryInstalled checks if the OpsSquad Node is installed
+func (m *Manager) IsBinaryInstalled() bool {
+	binaryPath := m.platform.GetBinaryPath()
 	_, err := os.Stat(binaryPath)
 	return err == nil
 }
 
-// GetOpsSquadNodeVersion returns the version of the installed OpsSquad Node
-func (m *Manager) GetOpsSquadNodeVersion() (string, error) {
-	binaryPath := m.platform.GetOpsSquadNodeBinaryPath()
+// GetBinaryVersion returns the version of the installed OpsSquad Node
+func (m *Manager) GetBinaryVersion() (string, error) {
+	binaryPath := m.platform.GetBinaryPath()
 
-	if !m.IsOpsSquadNodeInstalled() {
+	if !m.IsBinaryInstalled() {
 		return "", fmt.Errorf("OpsSquad Node not installed")
 	}
 
@@ -249,17 +185,17 @@ func (m *Manager) GetOpsSquadNodeVersion() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-// UpdateOpsSquadNode updates the OpsSquad Node to the specified version
-func (m *Manager) UpdateOpsSquadNode(version string) error {
+// UpdateBinary updates the OpsSquad Node to the specified version
+func (m *Manager) UpdateBinary(version string) error {
 	fmt.Printf("Updating OpsSquad Node to version %s...\n", version)
 
 	// Remove old version
-	if err := m.RemoveOpsSquadNode(); err != nil {
+	if err := m.RemoveBinary(); err != nil {
 		return fmt.Errorf("failed to remove old version: %w", err)
 	}
 
 	// Download new version
-	if err := m.DownloadOpsSquadNode(version); err != nil {
+	if err := m.DownloadBinary(version); err != nil {
 		return fmt.Errorf("failed to download new version: %w", err)
 	}
 
@@ -267,9 +203,9 @@ func (m *Manager) UpdateOpsSquadNode(version string) error {
 	return nil
 }
 
-// RemoveOpsSquadNode removes the OpsSquad Node binary
-func (m *Manager) RemoveOpsSquadNode() error {
-	binaryPath := m.platform.GetOpsSquadNodeBinaryPath()
+// RemoveBinary removes the OpsSquad Node binary
+func (m *Manager) RemoveBinary() error {
+	binaryPath := m.platform.GetBinaryPath()
 
 	if err := os.Remove(binaryPath); err != nil {
 		if os.IsNotExist(err) {
@@ -282,10 +218,10 @@ func (m *Manager) RemoveOpsSquadNode() error {
 }
 
 // Update updates the connectivity layer to the specified version (DEPRECATED)
-// TODO: Remove this function after migration to UpdateOpsSquadNode
+// TODO: Remove this function after migration to UpdateBinary
 func (m *Manager) Update(version string) error {
-	fmt.Println("WARNING: Update() is deprecated, use UpdateOpsSquadNode() instead")
-	return m.UpdateOpsSquadNode(version)
+	fmt.Println("WARNING: Update() is deprecated, use UpdateBinary() instead")
+	return m.UpdateBinary(version)
 }
 
 // NodeRelease represents a GitHub release for the node binary
@@ -299,7 +235,7 @@ type NodeRelease struct {
 func (m *Manager) GetLatestNodeVersion() (string, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	url := "https://api.github.com/repos/opssquad/opssquad-connectivity-layer-release/releases/latest"
+	url := "https://api.github.com/repos/fixpanic/opssquad-connectivity-layer-release/releases/latest"
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -321,11 +257,11 @@ func (m *Manager) GetLatestNodeVersion() (string, error) {
 
 // IsNodeUpdateAvailable checks if a newer version of the node is available
 func (m *Manager) IsNodeUpdateAvailable() (bool, string, error) {
-	if !m.IsOpsSquadNodeInstalled() {
+	if !m.IsBinaryInstalled() {
 		return true, "", nil // Need to install
 	}
 
-	currentVersion, err := m.GetOpsSquadNodeVersion()
+	currentVersion, err := m.GetBinaryVersion()
 	if err != nil {
 		return true, "", fmt.Errorf("failed to get current version: %w", err)
 	}
@@ -364,27 +300,27 @@ func (m *Manager) EnsureLatestNode() error {
 	}
 
 	if !updateAvailable {
-		if m.IsOpsSquadNodeInstalled() {
+		if m.IsBinaryInstalled() {
 			logger.List("Node binary is up to date")
 		}
 		return nil
 	}
 
 	// Update or install the node
-	if m.IsOpsSquadNodeInstalled() {
-		currentVersion, _ := m.GetOpsSquadNodeVersion()
+	if m.IsBinaryInstalled() {
+		currentVersion, _ := m.GetBinaryVersion()
 		logger.Info("Node update available: %s → %s", currentVersion, latestVersion)
 		logger.Progress("Downloading latest node binary")
 	} else {
 		logger.Progress("Installing node binary")
 	}
 
-	if err := m.DownloadOpsSquadNode("latest"); err != nil {
+	if err := m.DownloadBinary("latest"); err != nil {
 		return fmt.Errorf("failed to download latest node: %w", err)
 	}
 
 	// Verify the update
-	newVersion, err := m.GetOpsSquadNodeVersion()
+	newVersion, err := m.GetBinaryVersion()
 	if err != nil {
 		logger.Warning("Failed to verify new version: %v", err)
 	} else {
