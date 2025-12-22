@@ -43,8 +43,8 @@ func init() {
 	nodeInstallCmd.Flags().BoolVar(&forceInstall, "force", false, "Force reinstall even if node is already installed")
 
 	// Mark required flags
-	nodeInstallCmd.MarkFlagRequired("node-id")
-	nodeInstallCmd.MarkFlagRequired("token")
+	_ = nodeInstallCmd.MarkFlagRequired("node-id")
+	_ = nodeInstallCmd.MarkFlagRequired("token")
 }
 
 func runNodeInstall(cmd *cobra.Command, args []string) error {

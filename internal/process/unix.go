@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 )
 
@@ -27,13 +28,6 @@ func newPlatformProcessManager() ProcessManager {
 
 // StartProcess starts a process on Unix-like systems with proper detachment
 func (u *UnixProcessManager) StartProcess(config ProcessConfig) (*ProcessInfo, error) {
-	cmd := exec.Command(config.BinaryPath, config.Args...)
-
-	if config.WorkingDir != "" {
-		cmd.Dir = config.WorkingDir
-	}
-
-	if len(config.Env) > 0 {
 	var cmd *exec.Cmd
 	var err error
 

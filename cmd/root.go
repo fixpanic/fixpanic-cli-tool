@@ -11,8 +11,6 @@ import (
 var (
 	cfgFile string
 	version string
-	commit  string
-	date    string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -36,9 +34,6 @@ func Execute() error {
 // SetVersionInfo sets the version information for the CLI
 func SetVersionInfo(v, c, d string) {
 	version = v
-	commit = c
-	date = d
-
 	// Update the root command version
 	if v != "" && v != "dev" {
 		rootCmd.Version = fmt.Sprintf("%s (commit: %s, built: %s)", v, c, d)
@@ -51,7 +46,10 @@ func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.opssquad.yaml)")
 	rootCmd.PersistentFlags().String("socket-server", "socket.opssquad.ai", "Socket server address")
-	viper.BindPFlag("socket_server", rootCmd.PersistentFlags().Lookup("socket-server"))
+	if err := viper.BindPFlag("socket_server", rootCmd.PersistentFlags().Lookup("socket-server")); err != nil {
+		fmt.Printf("Error binding flag: %s\n", err)
+		os.Exit(1)
+	}
 }
 
 // initConfig reads in config file and ENV variables if set.

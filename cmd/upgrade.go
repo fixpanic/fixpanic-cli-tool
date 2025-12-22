@@ -156,7 +156,7 @@ func runUpgrade(cmd *cobra.Command, args []string) error {
 	// Show release notes if available
 	if latestRelease.Body != "" && len(latestRelease.Body) < 500 {
 		logger.Info("Release notes:")
-		logger.Plain(strings.TrimSpace(latestRelease.Body))
+		logger.Plain("%s", strings.TrimSpace(latestRelease.Body))
 		logger.Separator()
 	}
 
