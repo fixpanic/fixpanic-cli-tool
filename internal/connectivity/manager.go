@@ -158,8 +158,6 @@ func (m *Manager) GetBinaryPath() string {
 	return m.platform.GetBinaryPath()
 }
 
-
-
 // IsBinaryInstalled checks if the OpsSquad Node is installed
 func (m *Manager) IsBinaryInstalled() bool {
 	binaryPath := m.platform.GetBinaryPath()
