@@ -2,8 +2,8 @@
 
 Follow these steps to deploy your first node.
 
-## 1. Install an Node
-To install and register an node, you need an **Node ID** and **Token** from the OpsSquad dashboard.
+## 1. Install a Node
+To install and register a node, you need a **Node ID** and **Token** from the OpsSquad dashboard.
 
 Run the following command:
 

@@ -278,7 +278,7 @@ main() {
     
     print_success "Installation completed successfully!"
     print_info "Next steps:"
-    echo "  1. Run 'opssquad node install --node-id=<your-node-id> --token=<your-token>' to install an node"
+    echo "  1. Run 'opssquad node install --node-id=<your-node-id> --token=<your-token>' to install a node"
     echo "  2. Run 'opssquad node status' to check node status"
     echo "  3. Run 'opssquad --help' for more commands"
 }

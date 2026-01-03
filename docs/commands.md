@@ -5,12 +5,13 @@ Installs and configures a new node.
 
 **Usage:**
 ```bash
-opssquad node install --node-id=<id> --token=<key>
+opssquad node install --node-id=<id> --token=<token>
 ```
 
 **Flags:**
 - `--node-id`: (Required) The unique ID for the node.
-- `--token`: (Required) The authentication key.
+- `--token`: (Required) The authentication token.
+- `--force`: Force reinstall even if node is already installed.
 
 ---
 
