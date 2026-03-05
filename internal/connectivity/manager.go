@@ -7,10 +7,8 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/fixpanic/opssquad-cli-tool/internal/logger"
 	"github.com/fixpanic/opssquad-cli-tool/internal/platform"
@@ -19,14 +17,18 @@ import (
 // Manager handles connectivity layer binary operations
 type Manager struct {
 	platform *platform.PlatformInfo
-	client   *http.Client
+	client   HTTPClient
+	fs       FileSystem
+	runner   CommandRunner
 }
 
 // NewManager creates a new connectivity manager
 func NewManager(platform *platform.PlatformInfo) *Manager {
 	return &Manager{
 		platform: platform,
-		client:   &http.Client{},
+		client:   &RealHTTPClient{client: &http.Client{}},
+		fs:       &RealFileSystem{},
+		runner:   &RealCommandRunner{},
 	}
 }
 
@@ -59,7 +61,7 @@ func (m *Manager) DownloadBinary(version string) error {
 	}
 
 	// Create the file
-	out, err := os.Create(tmpFile)
+	out, err := m.fs.Create(tmpFile)
 	if err != nil {
 		return fmt.Errorf("failed to create temporary file: %w", err)
 	}
@@ -68,40 +70,40 @@ func (m *Manager) DownloadBinary(version string) error {
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		out.Close()
-		os.Remove(tmpFile)
+		m.fs.Remove(tmpFile)
 		return fmt.Errorf("failed to save binary: %w", err)
 	}
 
 	// Sync to ensure all data is written to disk before closing
 	if err := out.Sync(); err != nil {
 		out.Close()
-		os.Remove(tmpFile)
+		m.fs.Remove(tmpFile)
 		return fmt.Errorf("failed to sync file to disk: %w", err)
 	}
 
 	// Close the file before chmod and rename
 	if err := out.Close(); err != nil {
-		os.Remove(tmpFile)
+		m.fs.Remove(tmpFile)
 		return fmt.Errorf("failed to close file: %w", err)
 	}
 
 	// Make the binary executable
-	if err := os.Chmod(tmpFile, 0755); err != nil {
-		os.Remove(tmpFile)
+	if err := m.fs.Chmod(tmpFile, 0755); err != nil {
+		m.fs.Remove(tmpFile)
 		return fmt.Errorf("failed to make binary executable: %w", err)
 	}
 
 	// On macOS, remove quarantine attribute to allow execution
 	if runtime.GOOS == "darwin" {
-		if err := exec.Command("xattr", "-d", "com.apple.quarantine", tmpFile).Run(); err != nil {
+		if err := m.runner.Run("xattr", "-d", "com.apple.quarantine", tmpFile); err != nil {
 			// Log warning but don't fail - quarantine removal is not critical
 			logger.Warning("Failed to remove quarantine attribute: %v", err)
 		}
 	}
 
 	// Move to final location
-	if err := os.Rename(tmpFile, binaryPath); err != nil {
-		os.Remove(tmpFile)
+	if err := m.fs.Rename(tmpFile, binaryPath); err != nil {
+		m.fs.Remove(tmpFile)
 		return fmt.Errorf("failed to move binary to final location: %w", err)
 	}
 
@@ -134,7 +136,7 @@ func (m *Manager) Remove() error {
 func (m *Manager) VerifyChecksum(expectedChecksum string) error {
 	binaryPath := m.platform.GetBinaryPath()
 
-	file, err := os.Open(binaryPath)
+	file, err := m.fs.Open(binaryPath)
 	if err != nil {
 		return fmt.Errorf("failed to open binary: %w", err)
 	}
@@ -161,7 +163,7 @@ func (m *Manager) GetBinaryPath() string {
 // IsBinaryInstalled checks if the OpsSquad Node is installed
 func (m *Manager) IsBinaryInstalled() bool {
 	binaryPath := m.platform.GetBinaryPath()
-	_, err := os.Stat(binaryPath)
+	_, err := m.fs.Stat(binaryPath)
 	return err == nil
 }
 
@@ -174,8 +176,7 @@ func (m *Manager) GetBinaryVersion() (string, error) {
 	}
 
 	// Execute with --version flag
-	cmd := exec.Command(binaryPath, "--version")
-	output, err := cmd.Output()
+	output, err := m.runner.Output(binaryPath, "--version")
 	if err != nil {
 		return "", fmt.Errorf("failed to get version: %w", err)
 	}
@@ -205,7 +206,7 @@ func (m *Manager) UpdateBinary(version string) error {
 func (m *Manager) RemoveBinary() error {
 	binaryPath := m.platform.GetBinaryPath()
 
-	if err := os.Remove(binaryPath); err != nil {
+	if err := m.fs.Remove(binaryPath); err != nil {
 		if os.IsNotExist(err) {
 			return nil // Already removed
 		}
@@ -231,11 +232,9 @@ type NodeRelease struct {
 
 // GetLatestNodeVersion fetches the latest node version from GitHub releases
 func (m *Manager) GetLatestNodeVersion() (string, error) {
-	client := &http.Client{Timeout: 10 * time.Second}
-
 	url := "https://api.github.com/repos/fixpanic/opssquad-connectivity-layer-release/releases/latest"
 
-	resp, err := client.Get(url)
+	resp, err := m.client.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch latest release: %w", err)
 	}

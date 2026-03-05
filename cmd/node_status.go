@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -224,10 +225,21 @@ func runNodeStatus(cmd *cobra.Command, args []string) error {
 		fmt.Printf("📝 Log file: %s\n", logPath)
 	}
 
+	// Check local lock status
+	configDir := filepath.Dir(platformInfo.GetConfigPath())
+	lockPath := filepath.Join(configDir, lockFileName)
+	if _, err := os.Stat(lockPath); err == nil {
+		fmt.Println("🔒 Local lock: ACTIVE (all execution blocked)")
+	} else {
+		fmt.Println("🔓 Local lock: none")
+	}
+
 	fmt.Println("\n💡 Useful commands:")
 	fmt.Println("  opssquad node start    - Start the node")
 	fmt.Println("  opssquad node stop     - Stop the node")
 	fmt.Println("  opssquad node logs     - View node logs")
+	fmt.Println("  opssquad node lock     - Emergency lock (block all execution)")
+	fmt.Println("  opssquad node unlock   - Remove emergency lock")
 	fmt.Println("  opssquad node uninstall - Remove the node")
 
 	return nil

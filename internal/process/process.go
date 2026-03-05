@@ -33,15 +33,39 @@ type ProcessManager interface {
 	GetProcessStatus(pid int) *ProcessInfo
 }
 
+// CommandRunner interface for mocking exec.Command
+type CommandRunner interface {
+	Run(name string, arg ...string) error
+	Output(name string, arg ...string) ([]byte, error)
+}
+
+// RealCommandRunner implements CommandRunner using os/exec
+type RealCommandRunner struct{}
+
+func (r *RealCommandRunner) Run(name string, arg ...string) error {
+	return exec.Command(name, arg...).Run()
+}
+
+func (r *RealCommandRunner) Output(name string, arg ...string) ([]byte, error) {
+	return exec.Command(name, arg...).Output()
+}
+
 // NewProcessManager creates a platform-specific process manager
 func NewProcessManager() ProcessManager {
-	// This function will be implemented in platform-specific files
-	// using build constraints to avoid cross-platform compilation issues
 	return newPlatformProcessManager()
 }
 
 // BaseProcessManager provides common functionality
-type BaseProcessManager struct{}
+type BaseProcessManager struct {
+	Runner CommandRunner
+}
+
+// NewBaseProcessManager creates a new base process manager
+func NewBaseProcessManager() *BaseProcessManager {
+	return &BaseProcessManager{
+		Runner: &RealCommandRunner{},
+	}
+}
 
 // GetProcessStatus checks if a process is running
 func (b *BaseProcessManager) GetProcessStatus(pid int) *ProcessInfo {

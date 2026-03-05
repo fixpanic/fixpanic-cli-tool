@@ -23,7 +23,7 @@ type PlatformInfo struct {
 }
 
 // GetPlatformInfo returns platform-specific information
-func GetPlatformInfo() (*PlatformInfo, error) {
+var GetPlatformInfo = func() (*PlatformInfo, error) {
 	osType := runtime.GOOS
 	arch := runtime.GOARCH
 	currentUser, err := user.Current()
@@ -150,7 +150,7 @@ func GetConnectivityDownloadURL(version string) string {
 }
 
 // IsCommandAvailable checks if a command is available in PATH
-func IsCommandAvailable(name string) bool {
+var IsCommandAvailable = func(name string) bool {
 	cmd := exec.Command("which", name)
 	if err := cmd.Run(); err != nil {
 		return false
@@ -159,7 +159,7 @@ func IsCommandAvailable(name string) bool {
 }
 
 // IsSystemdAvailable checks if systemd is available on the system
-func IsSystemdAvailable() bool {
+var IsSystemdAvailable = func() bool {
 	return IsCommandAvailable("systemctl")
 }
 

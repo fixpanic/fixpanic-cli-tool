@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -14,12 +13,16 @@ import (
 // Manager handles systemd service operations
 type Manager struct {
 	platform *platform.PlatformInfo
+	fs       FileSystem
+	runner   CommandRunner
 }
 
 // NewManager creates a new service manager
 func NewManager(platform *platform.PlatformInfo) *Manager {
 	return &Manager{
 		platform: platform,
+		fs:       &RealFileSystem{},
+		runner:   &RealCommandRunner{},
 	}
 }
 
@@ -38,12 +41,12 @@ func (m *Manager) Install() error {
 	serviceDir := filepath.Dir(servicePath)
 
 	// Create service directory if it doesn't exist (important for user mode: ~/.config/systemd/user)
-	if err := os.MkdirAll(serviceDir, 0755); err != nil {
+	if err := m.fs.MkdirAll(serviceDir, 0755); err != nil {
 		return fmt.Errorf("failed to create systemd service directory: %w", err)
 	}
 
 	// Create systemd service file
-	if err := os.WriteFile(servicePath, []byte(serviceContent), 0644); err != nil {
+	if err := m.fs.WriteFile(servicePath, []byte(serviceContent), 0644); err != nil {
 		return fmt.Errorf("failed to write service file: %w", err)
 	}
 
@@ -75,7 +78,7 @@ func (m *Manager) Uninstall() error {
 	servicePath := m.platform.GetServiceFilePath()
 
 	// Remove service file
-	if err := os.Remove(servicePath); err != nil {
+	if err := m.fs.Remove(servicePath); err != nil {
 		if os.IsNotExist(err) {
 			return nil // Already removed
 		}
@@ -98,8 +101,7 @@ func (m *Manager) Start() error {
 	}
 
 	args := append(m.platform.GetSystemdCommandFlags(), "start", platform.GetSystemdServiceName())
-	cmd := exec.Command("systemctl", args...)
-	output, err := cmd.CombinedOutput()
+	output, err := m.runner.CombinedOutput("systemctl", args...)
 	if err != nil {
 		return fmt.Errorf("failed to start service (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
@@ -115,8 +117,7 @@ func (m *Manager) Stop() error {
 	}
 
 	args := append(m.platform.GetSystemdCommandFlags(), "stop", platform.GetSystemdServiceName())
-	cmd := exec.Command("systemctl", args...)
-	output, err := cmd.CombinedOutput()
+	output, err := m.runner.CombinedOutput("systemctl", args...)
 	if err != nil {
 		return fmt.Errorf("failed to stop service (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
@@ -132,8 +133,7 @@ func (m *Manager) Status() (string, error) {
 	}
 
 	args := append(m.platform.GetSystemdCommandFlags(), "is-active", platform.GetSystemdServiceName())
-	cmd := exec.Command("systemctl", args...)
-	output, err := cmd.Output()
+	output, err := m.runner.Output("systemctl", args...)
 	if err != nil {
 		// Service is not active
 		return "inactive", nil
@@ -150,9 +150,8 @@ func (m *Manager) IsEnabled() (bool, error) {
 	}
 
 	args := append(m.platform.GetSystemdCommandFlags(), "is-enabled", platform.GetSystemdServiceName())
-	cmd := exec.Command("systemctl", args...)
 	// Here we just want boolean, output doesn't matter much unless we want to debug IsEnabled failures specifically
-	if err := cmd.Run(); err != nil {
+	if err := m.runner.Run("systemctl", args...); err != nil {
 		return false, nil // Service is not enabled
 	}
 
@@ -166,8 +165,7 @@ func (m *Manager) Enable() error {
 	}
 
 	args := append(m.platform.GetSystemdCommandFlags(), "enable", platform.GetSystemdServiceName())
-	cmd := exec.Command("systemctl", args...)
-	output, err := cmd.CombinedOutput()
+	output, err := m.runner.CombinedOutput("systemctl", args...)
 	if err != nil {
 		return fmt.Errorf("failed to enable service (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
@@ -183,8 +181,7 @@ func (m *Manager) Disable() error {
 	}
 
 	args := append(m.platform.GetSystemdCommandFlags(), "disable", platform.GetSystemdServiceName())
-	cmd := exec.Command("systemctl", args...)
-	output, err := cmd.CombinedOutput()
+	output, err := m.runner.CombinedOutput("systemctl", args...)
 	if err != nil {
 		return fmt.Errorf("failed to disable service (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
@@ -255,8 +252,7 @@ func (m *Manager) IsUsable() bool {
 
 	// Try to list units (lightweight check) to see if we can connect to the bus
 	args := append(m.platform.GetSystemdCommandFlags(), "list-units", "--no-pager", "-n", "0")
-	cmd := exec.Command("systemctl", args...)
-	if err := cmd.Run(); err != nil {
+	if err := m.runner.Run("systemctl", args...); err != nil {
 		return false
 	}
 	return true
@@ -265,8 +261,7 @@ func (m *Manager) IsUsable() bool {
 // reloadSystemd reloads the systemd daemon
 func (m *Manager) reloadSystemd() error {
 	args := append(m.platform.GetSystemdCommandFlags(), "daemon-reload")
-	cmd := exec.Command("systemctl", args...)
-	output, err := cmd.CombinedOutput()
+	output, err := m.runner.CombinedOutput("systemctl", args...)
 	if err != nil {
 		return fmt.Errorf("failed to reload systemd daemon (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
@@ -287,8 +282,7 @@ func (m *Manager) GetServiceLogs(lines int) (string, error) {
 	}
 	args = append(args, "-u", platform.GetSystemdServiceName(), "-n", fmt.Sprintf("%d", lines), "--no-pager")
 
-	cmd := exec.Command("journalctl", args...)
-	output, err := cmd.CombinedOutput() // Capture stderr too just in case
+	output, err := m.runner.CombinedOutput("journalctl", args...) // Capture stderr too just in case
 	if err != nil {
 		return "", fmt.Errorf("failed to get service logs (output: %s): %w", strings.TrimSpace(string(output)), err)
 	}
